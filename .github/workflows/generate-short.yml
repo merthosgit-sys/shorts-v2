@@ -1,0 +1,102 @@
+name: Generate Shorts Batch
+
+on:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: How many videos? Ignored when manual topics are provided.
+        required: true
+        default: '3'
+        type: choice
+        options:
+          - '1'
+          - '2'
+          - '3'
+          - '4'
+          - '5'
+      niche:
+        description: Channel niche / topic family
+        required: true
+        default: technology and internet history, surprising inventions, software incidents
+        type: string
+      topics:
+        description: "Optional exact topics separated with | (max 5). Example: First webcam|Origin of QR codes"
+        required: false
+        type: string
+
+  schedule:
+    - cron: '0 12 * * *'
+      timezone: 'Europe/Istanbul'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shorts-generator
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+      GEMINI_MODEL: gemini-3.6-flash
+      SHORTS_NICHE: ${{ inputs.niche || 'technology and internet history, surprising inventions, software incidents' }}
+      SHORTS_LANGUAGE: tr-TR
+      SHORTS_TOPICS: ${{ inputs.topics || '' }}
+      BATCH_COUNT: ${{ inputs.count || '3' }}
+      PIPER_VOICE: tr_TR-dfki-medium
+      PIPER_DATA_DIR: .cache/piper
+      OUTPUT_DIR: output
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
+
+      - name: Install Node dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Install Piper TTS
+        run: python3 -m pip install --disable-pip-version-check piper-tts==1.8.0
+
+      - name: Restore Piper voice cache
+        uses: actions/cache@v4
+        with:
+          path: .cache/piper
+          key: piper-tr-TR-dfki-medium-v1
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Generate Shorts batch
+        run: npm run generate-short
+
+      - name: Upload rendered artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shorts-videos-${{ github.run_number }}
+          path: output/final-videos/*.mp4
+          if-no-files-found: warn
+          retention-days: 7
