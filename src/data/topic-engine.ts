@@ -4,10 +4,9 @@ import {
 } from "./video-memory.js";
 
 
-const SUBJECTS: Record<string, string[]> = {
+const SUBJECTS = {
 
-
-  technology: [
+  technology:[
 
     "WiFi",
     "Bluetooth",
@@ -26,8 +25,7 @@ const SUBJECTS: Record<string, string[]> = {
 
   ],
 
-
-  science: [
+  science:[
 
     "Black Holes",
     "DNA",
@@ -42,8 +40,7 @@ const SUBJECTS: Record<string, string[]> = {
 
   ],
 
-
-  history: [
+  history:[
 
     "Ancient Machines",
     "Lost Inventions",
@@ -54,8 +51,7 @@ const SUBJECTS: Record<string, string[]> = {
 
   ],
 
-
-  engineering: [
+  engineering:[
 
     "Bridges",
     "Skyscrapers",
@@ -66,8 +62,7 @@ const SUBJECTS: Record<string, string[]> = {
 
   ],
 
-
-  daily: [
+  daily:[
 
     "Keyboard",
     "Barcode",
@@ -79,87 +74,71 @@ const SUBJECTS: Record<string, string[]> = {
 
   ]
 
-};
+} as const;
 
 
 
+type Category =
+keyof typeof SUBJECTS;
 
 
-const TITLE_PATTERNS:string[] = [
+
+const TITLE_PATTERNS = [
 
   "The Hidden Story Behind {x}",
-
   "How {x} Changed The World",
-
   "Why Was {x} Invented?",
-
   "How Does {x} Really Work?",
-
   "The Forgotten History Of {x}",
-
   "The Technology Secret Of {x}",
-
   "The Surprising Truth About {x}",
-
   "Nobody Explains {x} Like This"
 
-];
+] as const;
 
 
 
 
-
-const ANGLES:string[] = [
+const ANGLES = [
 
   "history",
-
   "engineering",
-
   "unknown facts",
-
   "future technology",
-
   "how it works",
-
   "origin story",
-
   "hidden details"
 
-];
+] as const;
 
 
 
 
 
 
+function random<T>(array:readonly T[]):T {
 
 
-function random<T>(array:T[]):T {
-
-
-  const item =
+  const value =
     array[
       Math.floor(
-        Math.random() * array.length
+        Math.random()*array.length
       )
     ];
 
 
-  if(item === undefined){
+  if(value===undefined){
 
     throw new Error(
-      "Cannot choose from empty array"
+      "Empty array"
     );
 
   }
 
 
-  return item;
-
+  return value;
 
 }
-
-
 
 
 
@@ -170,17 +149,16 @@ function random<T>(array:T[]):T {
 export async function generateUniqueTopic(){
 
 
-  let attempts = 0;
+  let attempts=0;
 
 
 
-  while(attempts < 500){
-
+  while(attempts<500){
 
 
     const category =
       random(
-        Object.keys(SUBJECTS)
+        Object.keys(SUBJECTS) as Category[]
       );
 
 
@@ -213,7 +191,6 @@ export async function generateUniqueTopic(){
 
 
 
-
     if(
       await hasVideo(title)
     ){
@@ -223,7 +200,6 @@ export async function generateUniqueTopic(){
       continue;
 
     }
-
 
 
 
@@ -248,21 +224,15 @@ export async function generateUniqueTopic(){
 
 
 
-
     return {
-
 
       topic:title,
 
-
       baseTopic:subject,
-
 
       category,
 
-
       angle,
-
 
       searchQueries:[
 
@@ -276,20 +246,16 @@ export async function generateUniqueTopic(){
 
       ]
 
-
     };
-
 
 
   }
 
 
 
-
   throw new Error(
     "Unique topic generation failed"
   );
-
 
 
 }
@@ -302,12 +268,10 @@ export async function generateUniqueTopic(){
 
 
 export async function generateTopics(
-  count:number
+count:number
 ){
 
-
-  const result:
-  Awaited<ReturnType<typeof generateUniqueTopic>>[] = [];
+  const result = [];
 
 
 
@@ -326,6 +290,5 @@ export async function generateTopics(
 
 
   return result;
-
 
 }
