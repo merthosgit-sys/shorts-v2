@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import {
   blueprintSchema,
   topicPlanSchema,
@@ -7,51 +7,41 @@ import {
   type TopicPlan,
 } from '../domain/blueprint.js';
 
+import { LocalAIService } from './local-ai.service.js';
 
-const MAX_RETRIES = 3;
-const BASE_DELAY_MS = 2000;
 
 
 interface ErrorLike {
-  readonly status?: number | string;
-  readonly code?: number | string;
-  readonly message?: string;
+  status?: number | string;
+  code?: number | string;
+  message?: string;
 }
 
 
 
-function sleep(ms:number):Promise<void>{
+function getError(error:unknown):ErrorLike {
 
-  return new Promise(resolve=>{
-    setTimeout(resolve,ms);
-  });
-
-}
-
-
-
-function getError(error:unknown):ErrorLike{
-
-  if(typeof error !== 'object' || error===null){
-
+  if(typeof error !== 'object' || error === null){
     return {};
-
   }
 
 
-  const e = error as Record<string,unknown>;
+  const e =
+    error as Record<string,unknown>;
 
 
   return {
 
     status:
-      typeof e.status === 'string' || typeof e.status === 'number'
+      typeof e.status === 'number' ||
+      typeof e.status === 'string'
       ? e.status
       : undefined,
 
 
     code:
-      typeof e.code === 'string' || typeof e.code === 'number'
+      typeof e.code === 'number' ||
+      typeof e.code === 'string'
       ? e.code
       : undefined,
 
@@ -67,21 +57,20 @@ function getError(error:unknown):ErrorLike{
 
 
 
-
-function isQuotaError(error:unknown):boolean{
+function isQuotaError(error:unknown){
 
   const e=getError(error);
 
-  const msg=e.message?.toLowerCase() ?? "";
+  const msg =
+    e.message?.toLowerCase() ?? "";
 
 
   return (
 
     msg.includes("quota") ||
-    msg.includes("resource_exhausted") ||
     msg.includes("429") ||
-    e.status===429 ||
-    e.code===429
+    msg.includes("resource_exhausted") ||
+    e.status===429
 
   );
 
@@ -91,112 +80,16 @@ function isQuotaError(error:unknown):boolean{
 
 
 
-async function withRetry<T>(
-name:string,
-fn:()=>Promise<T>
-):Promise<T>{
-
-
-let lastError:unknown;
-
-
-
-for(let i=1;i<=MAX_RETRIES;i++){
-
-
-try{
-
-return await fn();
-
-}
-
-catch(error){
-
-
-lastError=error;
-
-
-
-if(isQuotaError(error)){
-
-throw error;
-
-}
-
-
-
-if(i===MAX_RETRIES){
-
-break;
-
-}
-
-
-
-await sleep(
-BASE_DELAY_MS*i
-);
-
-
-console.log(
-`[Gemini] ${name} retry ${i}/${MAX_RETRIES}`
-);
-
-
-}
-
-
-
-}
-
-
-
-throw lastError;
-
-
-
-}
-
-
-
-
-
-
 
 export class GeminiService {
 
 
-readonly #client?:GoogleGenAI;
+  readonly #client?:GoogleGenAI;
 
-readonly #model:string;
-
-
-
-constructor(
-apiKey:string,
-model:string
-){
-
-
-this.#model=model;
-
-
-if(apiKey?.trim()){
-
-this.#client =
-new GoogleGenAI({
-apiKey
-});
-
-}
-
-
-
-}
-export class GeminiService {
-
-  readonly #client?: GoogleGenAI;
   readonly #model:string;
+
+  readonly #localAI:LocalAIService;
+
 
 
   constructor(
@@ -204,7 +97,13 @@ export class GeminiService {
     model:string
   ){
 
+
     this.#model=model;
+
+    this.#localAI =
+      new LocalAIService();
+
+
 
     if(apiKey?.trim()){
 
@@ -221,16 +120,18 @@ export class GeminiService {
 
 
 
+
   public async planTopics(
     niche:string,
     language:string,
     count:number
-  ):Promise<readonly TopicPlan[]>{
+  ):Promise<readonly TopicPlan[]> {
+
 
 
     if(!this.#client){
 
-      return this.localTopics(niche,count);
+      return this.localTopics(count);
 
     }
 
@@ -239,87 +140,56 @@ export class GeminiService {
     try{
 
 
-      const response =
-      await withRetry(
-      "Plan topics",
-      async()=>{
+      const result =
+      await this.#client.models.generateContent({
 
-        return this.#client!.models.generateContent({
-
-          model:this.#model,
-
-          contents:
-          `
-          Create ${count} YouTube Shorts topics.
-
-          Niche:
-          ${niche}
-
-          Language:
-          ${language}
+        model:this.#model,
 
 
-          Rules:
+        contents:
+`
+Create ${count} YouTube Shorts topics.
 
-          - curiosity driven
-          - evergreen
-          - visually searchable
-          - explainable in 30 seconds
-          - no fake claims
+Niche:
+${niche}
 
-          `,
+Language:
+${language}
 
 
-          config:{
-            responseMimeType:"application/json",
+Rules:
 
-            responseSchema:{
+- curiosity based
+- evergreen
+- suitable for 40 second videos
+- visually searchable
 
-              type:Type.OBJECT,
+Return JSON:
 
-              properties:{
+{
+ "topics":[
+ {
+  "topic":"",
+  "angle":""
+ }
+ ]
+}
 
-                topics:{
-                  type:Type.ARRAY,
-
-                  items:{
-
-                    type:Type.OBJECT,
-
-                    properties:{
-
-                      topic:{
-                        type:Type.STRING
-                      },
-
-                      angle:{
-                        type:Type.STRING
-                      }
-
-                    }
-
-                  }
-
-                }
-
-              }
-
-            }
-
-          }
-
-        });
+`
 
 
       });
 
 
 
-      const text=response.text?.trim();
+      const text =
+        result.text?.trim();
+
 
 
       if(!text)
-        throw new Error("empty response");
+        throw new Error("Empty Gemini response");
+
 
 
       return topicPlanSchema.parse(
@@ -333,21 +203,23 @@ export class GeminiService {
 
 
       console.log(
-        "[LOCAL AI] Topic generator used"
+        isQuotaError(error)
+        ?
+        "[Gemini quota exceeded] Local topics used"
+        :
+        "[Gemini failed] Local topics used"
       );
 
 
-      return this.localTopics(
-        niche,
-        count
-      );
-
+      return this.localTopics(count);
 
     }
 
 
 
   }
+
+
 
 
 
@@ -371,21 +243,18 @@ export class GeminiService {
       try{
 
 
-        const response =
-        await withRetry(
-        "Research",
-        async()=>{
+        const result =
+        await this.#client.models.generateContent({
 
 
-          return this.#client!.models.generateContent({
-
-            model:this.#model,
+          model:this.#model,
 
 
-            contents:
+          contents:
 `
-Research this Shorts topic:
+Research this YouTube Shorts topic.
 
+Topic:
 ${requestedTopic}
 
 
@@ -397,36 +266,32 @@ Angle:
 ${angle ?? ""}
 
 
-Give:
-
-- important facts
-- historical background
-- why people care
-- visual ideas
-
+Give short factual information.
 
 Avoid:
-fake facts
-rumors
-unsupported claims
+fake facts,
+rumors,
+unsupported claims.
 
 `
-
-          });
-
 
         });
 
 
 
-        const text=response.text?.trim();
+        const text =
+          result.text?.trim();
+
 
 
         if(text){
 
           return {
+
             text,
+
             sources:[]
+
           };
 
         }
@@ -436,11 +301,9 @@ unsupported claims
       }
       catch(error){
 
-
         console.log(
-        "[LOCAL AI] Research fallback"
+          "[Gemini research failed] Local research"
         );
-
 
       }
 
@@ -450,31 +313,9 @@ unsupported claims
 
 
 
-
-    return {
-
-      text:
-`
-Topic:
-${requestedTopic}
-
-
-This topic is interesting because it connects technology,
-history and everyday life.
-
-The video should explain:
-- what it is
-- how it started
-- why it matters today
-
-
-Focus on simple facts and visual storytelling.
-
-`,
-
-      sources:[]
-
-    };
+    return this.#localAI.generateResearch(
+      requestedTopic
+    );
 
 
 
@@ -503,24 +344,19 @@ Focus on simple facts and visual storytelling.
       try{
 
 
-        const response =
-        await withRetry(
-        "Blueprint",
-        async()=>{
+        const result =
+        await this.#client.models.generateContent({
 
 
-          return this.#client!.models.generateContent({
-
-            model:this.#model,
+          model:this.#model,
 
 
-            contents:
+          contents:
 `
-Create a YouTube Shorts blueprint.
+Create YouTube Shorts blueprint.
 
 Language:
 ${language}
-
 
 Niche:
 ${niche}
@@ -528,19 +364,10 @@ ${niche}
 
 Rules:
 
-5-8 scenes
-
-Total narration:
-55-95 words
-
-
-Scene 1:
-strong hook
-
-
-Each scene:
-- narration
-- 2-4 English Pexels searches
+- 5 scenes
+- total narration 55-95 words
+- first scene must have hook
+- each scene needs Pexels search keywords
 
 
 Research:
@@ -548,122 +375,44 @@ Research:
 ${research.text}
 
 
-`,
 
+Return ONLY JSON:
 
-
-config:{
-
-responseMimeType:"application/json",
-
-responseSchema:{
-
-type:Type.OBJECT,
-
-properties:{
-
-
-topic:{
-type:Type.STRING
-},
-
-
-title:{
-type:Type.STRING
-},
-
-
-description:{
-type:Type.STRING
-},
-
-
-hook:{
-type:Type.STRING
-},
-
-
-
-scenes:{
-
-type:Type.ARRAY,
-
-items:{
-
-type:Type.OBJECT,
-
-
-properties:{
-
-
-narration:{
-type:Type.STRING
-},
-
-
-searchQueries:{
-
-type:Type.ARRAY,
-
-items:{
-type:Type.STRING
-}
-
-}
-
-},
-
-
-required:[
-"narration",
-"searchQueries"
+{
+"topic":"",
+"title":"",
+"description":"",
+"hook":"",
+"scenes":[
+ {
+ "narration":"",
+ "searchQueries":[
+ ""
+ ]
+ }
 ]
-
-
 }
 
-
-}
-
-
-},
-
-
-required:[
-"topic",
-"title",
-"description",
-"hook",
-"scenes"
-]
-
-
-}
-
-
-}
-
-
-
-          });
-
+`
 
         });
 
 
 
-        const text=response.text?.trim();
+        const text =
+          result.text?.trim();
 
 
 
         if(text){
 
+
           return blueprintSchema.parse(
             JSON.parse(text)
           );
 
-        }
 
+        }
 
 
 
@@ -671,7 +420,7 @@ required:[
       catch(error){
 
         console.log(
-        "[LOCAL AI] Blueprint fallback"
+          "[Gemini blueprint failed] Local blueprint"
         );
 
       }
@@ -682,8 +431,20 @@ required:[
 
 
 
-    return this.localBlueprint(
-      research
+
+    const topic =
+    research.text
+    .split("\n")
+    .find(x=>x.startsWith("Topic:"))
+    ?.replace("Topic:","")
+    .trim()
+    ??
+    "Technology Story";
+
+
+
+    return this.#localAI.generateBlueprint(
+      topic
     );
 
 
@@ -697,177 +458,50 @@ required:[
 
 
 
-private localTopics(
-niche:string,
-count:number
-):TopicPlan[]{
 
+  private localTopics(
+    count:number
+  ):TopicPlan[]{
 
-const topics=[
 
-"How WiFi Was Invented",
+    const topics=[
 
-"The Hidden Story Of QR Codes",
+      "How WiFi Was Invented",
 
-"Why Airplane Mode Exists",
+      "The Hidden Story Of QR Codes",
 
-"How GPS Finds Your Location",
+      "How GPS Finds Your Location",
 
-"The Strange Origin Of Bluetooth",
+      "The Strange Origin Of Bluetooth",
 
-"How Electric Cars Changed Technology",
+      "Why Keyboard Letters Are Arranged Like This",
 
-"Why Computer Keyboard Letters Are Arranged Like This",
+      "The First Internet Message Ever Sent",
 
-"The First Internet Message Ever Sent",
+      "How Electric Cars Changed Technology",
 
-"How Smartphones Changed The World",
+      "Hidden Technology Inside Everyday Objects"
 
-"Hidden Technology Inside Everyday Objects"
+    ];
 
 
-];
 
+    return Array.from(
+      {length:count},
+      (_,i)=>({
 
-return Array.from(
-{length:count},
-(_,i)=>({
+        topic:
+        topics[i % topics.length],
 
-topic:topics[i % topics.length],
 
-angle:
-`The surprising story behind ${topics[i % topics.length]}`
+        angle:
+        "The surprising story behind this technology"
 
-})
+      })
+    );
 
-);
 
-
-}
-
-
-
-
-
-
-
-
-
-private localBlueprint(
-research:ResearchResult
-
-):Blueprint{
-
-
-const topic =
-research.text
-.split("\n")
-.find(x=>x.includes("Topic:"))
-?.replace("Topic:","")
-.trim()
-||
-"Unknown Technology Story";
-
-
-
-
-
-return {
-
-topic,
-
-
-title:
-topic.length>70
-? topic.substring(0,70)
-: topic,
-
-
-description:
-`A short documentary explaining the hidden story behind ${topic}.`,
-
-
-hook:
-`You use this every day, but you probably don't know its real story.`,
-
-
-
-scenes:[
-
-
-{
-narration:
-`${topic} has a fascinating story that changed the way people use technology today.`,
-
-searchQueries:[
-"modern technology",
-"computer laboratory"
-]
-
-},
-
-
-
-{
-narration:
-"It started from research and ideas that slowly became part of everyday life.",
-
-searchQueries:[
-"scientists laboratory",
-"technology research"
-]
-
-},
-
-
-
-{
-narration:
-"Over time engineers improved this invention and made it accessible worldwide.",
-
-searchQueries:[
-"engineering technology",
-"innovation"
-]
-
-},
-
-
-
-{
-narration:
-"Today millions of people use this technology without thinking about how it works.",
-
-searchQueries:[
-"people using smartphone",
-"digital technology"
-]
-
-},
-
-
-
-{
-narration:
-"The hidden story behind this invention shows how science changes our world.",
-
-searchQueries:[
-"future technology",
-"earth digital network"
-]
-
-}
-
-
-
-]
-
-
-};
-
-
-
-}
+  }
 
 
 
