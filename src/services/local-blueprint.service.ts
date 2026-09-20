@@ -1,31 +1,49 @@
-import type { Blueprint, ResearchResult } from "../domain/blueprint.js";
+import type {
+  Blueprint,
+  ResearchResult
+} from "../domain/blueprint.js";
 
 
-const HOOKS = [
+
+
+const HOOKS:string[] = [
+
 
 "Most people use this every day, but they don't know the real story behind it.",
 
+
 "This invention changed the world, but its origin is surprising.",
+
 
 "You probably use this technology without knowing how it works.",
 
+
 "The hidden story behind this everyday technology is fascinating.",
+
 
 "This simple idea became one of the biggest inventions in history."
 
+
 ];
 
 
 
-const ENDINGS = [
+
+
+const ENDINGS:string[] = [
+
 
 "This is why this technology became part of modern life.",
 
+
 "Today, millions of people use it without thinking about its hidden history.",
+
 
 "A simple idea became a technology that changed the world.",
 
+
 "Behind everyday objects, there is always a surprising story."
+
 
 ];
 
@@ -33,7 +51,10 @@ const ENDINGS = [
 
 
 
-const VISUAL_MAP:Record<string,string[]> = {
+
+
+const VISUAL_MAP:
+Record<string,string[]> = {
 
 
 wifi:[
@@ -113,49 +134,77 @@ default:[
 
 
 
+
 function random<T>(array:T[]):T{
 
-return array[
-Math.floor(
-Math.random()*array.length
-)
-];
 
-}
-
-
+  const value =
+    array[
+      Math.floor(
+        Math.random()*array.length
+      )
+    ];
 
 
+  if(value === undefined){
+
+    throw new Error(
+      "Empty array"
+    );
+
+  }
 
 
-
-function detectVisual(topic:string){
-
-
-const key =
-topic
-.toLowerCase()
-.replace(/[^a-z]/g,"");
-
-
-
-for(const item of Object.keys(VISUAL_MAP)){
-
-
-if(key.includes(item)){
-
-return VISUAL_MAP[item];
-
-}
+  return value;
 
 
 }
 
 
-return VISUAL_MAP.default;
+
+
+
+
+
+
+function detectVisual(
+topic:string
+):string[]{
+
+
+  const key =
+    topic
+    .toLowerCase()
+    .replace(/[^a-z]/g,"");
+
+
+
+  for(
+    const item of Object.keys(VISUAL_MAP)
+  ){
+
+
+    if(
+      key.includes(item)
+    ){
+
+      return VISUAL_MAP[item] ??
+      VISUAL_MAP.default;
+
+    }
+
+
+  }
+
+
+
+
+  return VISUAL_MAP.default;
 
 
 }
+
+
 
 
 
@@ -168,82 +217,123 @@ topic:string
 ){
 
 
-const visuals =
-detectVisual(topic);
+
+  const visuals =
+    detectVisual(topic);
 
 
 
-return [
+  return [
 
 
-{
-narration:
-`${topic} has a fascinating story that started with a simple idea and later became an important part of modern life.`,
+    {
 
-searchQueries:[
-visuals[0],
-visuals[1]
-]
-
-},
+      narration:
+      `${topic} has a fascinating story that started with a simple idea and later became an important part of modern life.`,
 
 
+      searchQueries:[
 
-{
-narration:
-"Engineers and scientists developed this technology by solving difficult problems and creating new solutions.",
+        visuals[0] ??
+        "technology",
 
-searchQueries:[
-visuals[2],
-visuals[3]
-]
+        visuals[1] ??
+        "innovation"
 
-},
+      ]
+
+    },
 
 
 
-{
-narration:
-"Over time, improvements made it faster, smaller and easier for everyone to use around the world.",
-
-searchQueries:[
-"technology evolution",
-"modern innovation"
-]
-
-},
+    {
 
 
+      narration:
+      "Engineers and scientists developed this technology by solving difficult problems and creating new solutions.",
 
-{
-narration:
-"Today, this invention works silently in the background and helps millions of people every day.",
 
-searchQueries:[
-"people using technology",
-"digital lifestyle"
-]
+      searchQueries:[
 
-},
+        visuals[2] ??
+        "engineering",
+
+        visuals[3] ??
+        "laboratory"
+
+      ]
+
+
+    },
 
 
 
-{
-narration:
-random(ENDINGS),
+    {
 
-searchQueries:[
-"future technology",
-"world technology"
-]
+
+      narration:
+      "Over time, improvements made it faster, smaller and easier for everyone to use around the world.",
+
+
+      searchQueries:[
+
+        "technology evolution",
+
+        "modern innovation"
+
+      ]
+
+
+    },
+
+
+
+    {
+
+
+      narration:
+      "Today, this invention works silently in the background and helps millions of people every day.",
+
+
+      searchQueries:[
+
+        "people using technology",
+
+        "digital lifestyle"
+
+      ]
+
+
+    },
+
+
+
+    {
+
+
+      narration:
+      random(ENDINGS),
+
+
+      searchQueries:[
+
+        "future technology",
+
+        "world technology"
+
+      ]
+
+    }
+
+
+  ];
+
 
 }
 
 
 
-];
 
-}
 
 
 
@@ -253,68 +343,73 @@ export class LocalBlueprintService {
 
 
 
-public create(
-research:ResearchResult
-):Blueprint{
+  public create(
+    research:ResearchResult
+  ):Blueprint {
 
 
 
-const topic =
-research.text
-.split("\n")
-.find(
-line =>
-line.toLowerCase()
-.includes("topic")
-)
-?.replace(/topic:/i,"")
-.trim()
-||
-"Unknown Technology";
+    const topic =
 
-
-
-
-const cleanTopic =
-topic.length>5
-?
-topic
-:
-"Unknown Technology";
+      research.text
+      .split("\n")
+      .find(
+        line =>
+        line.toLowerCase()
+        .startsWith("topic")
+      )
+      ?.replace(
+        /topic:/i,
+        ""
+      )
+      .trim()
+      ??
+      "Unknown Technology";
 
 
 
 
-return {
 
-
-topic:cleanTopic,
-
-
-title:
-`The Hidden Story Behind ${cleanTopic}`,
-
-
-
-description:
-`A short documentary explaining how ${cleanTopic} changed the world and why it matters today.`,
+    const cleanTopic =
+      topic.length > 5
+      ?
+      topic
+      :
+      "Unknown Technology";
 
 
 
-hook:
-random(HOOKS),
 
 
 
-scenes:
-createScenes(cleanTopic)
+    return {
+
+
+      topic:cleanTopic,
+
+
+      title:
+      `The Hidden Story Behind ${cleanTopic}`,
+
+
+      description:
+      `A short documentary explaining how ${cleanTopic} changed the world and why it matters today.`,
 
 
 
-};
+      hook:
+      random(HOOKS),
 
 
-}
+
+      scenes:
+      createScenes(cleanTopic)
+
+
+    };
+
+
+  }
 
 
 
