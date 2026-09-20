@@ -1,49 +1,35 @@
 import type {
-  Blueprint,
-  ResearchResult
+ Blueprint,
+ ResearchResult
 } from "../domain/blueprint.js";
 
 
 
-
-const HOOKS:string[] = [
-
+const HOOKS = [
 
 "Most people use this every day, but they don't know the real story behind it.",
 
-
 "This invention changed the world, but its origin is surprising.",
-
 
 "You probably use this technology without knowing how it works.",
 
-
 "The hidden story behind this everyday technology is fascinating.",
-
 
 "This simple idea became one of the biggest inventions in history."
 
-
 ];
 
 
 
-
-
-const ENDINGS:string[] = [
-
+const ENDINGS = [
 
 "This is why this technology became part of modern life.",
 
-
 "Today, millions of people use it without thinking about its hidden history.",
-
 
 "A simple idea became a technology that changed the world.",
 
-
 "Behind everyday objects, there is always a surprising story."
-
 
 ];
 
@@ -51,80 +37,57 @@ const ENDINGS:string[] = [
 
 
 
-
-
-const VISUAL_MAP:
-Record<string,string[]> = {
+const VISUAL_MAP:Record<string,string[]> = {
 
 
 wifi:[
 
 "wifi router close up",
-
 "wireless signal animation",
-
 "computer network",
-
 "technology laboratory"
 
 ],
 
 
-
 gps:[
 
 "GPS satellite earth",
-
 "navigation map animation",
-
 "satellite communication",
-
 "smartphone map"
 
 ],
 
 
-
 bluetooth:[
 
 "bluetooth devices",
-
 "wireless technology",
-
 "smart devices",
-
 "computer connection"
 
 ],
 
 
-
 ai:[
 
 "artificial intelligence",
-
 "robot technology",
-
 "AI computer",
-
 "futuristic technology"
 
 ],
 
 
-
 default:[
 
 "technology documentary",
-
 "modern computer",
-
 "innovation laboratory",
-
 "digital world"
 
 ]
-
 
 };
 
@@ -134,33 +97,31 @@ default:[
 
 
 
-
-function random<T>(array:T[]):T{
-
-
-  const value =
-    array[
-      Math.floor(
-        Math.random()*array.length
-      )
-    ];
+function random<T>(
+array:readonly T[]
+):T{
 
 
-  if(value === undefined){
+const value =
+array[
+Math.floor(
+Math.random()*array.length
+)
+];
 
-    throw new Error(
-      "Empty array"
-    );
 
-  }
+if(value===undefined){
 
-
-  return value;
-
+throw new Error(
+"Empty array"
+);
 
 }
 
 
+return value;
+
+}
 
 
 
@@ -172,39 +133,40 @@ topic:string
 ):string[]{
 
 
-  const key =
-    topic
-    .toLowerCase()
-    .replace(/[^a-z]/g,"");
+const key =
+topic
+.toLowerCase()
+.replace(/[^a-z]/g,"");
 
 
 
-  for(
-    const item of Object.keys(VISUAL_MAP)
-  ){
+for(
+const item of Object.keys(VISUAL_MAP)
+){
 
 
-    if(
-      key.includes(item)
-    ){
+if(
+key.includes(item)
+){
 
-      return VISUAL_MAP[item] ??
-      VISUAL_MAP.default;
+return VISUAL_MAP[item] ??
+VISUAL_MAP.default;
 
-    }
-
-
-  }
-
-
-
-
-  return VISUAL_MAP.default;
+}
 
 
 }
 
 
+
+return VISUAL_MAP.default ?? [
+
+"technology documentary"
+
+];
+
+
+}
 
 
 
@@ -217,116 +179,93 @@ topic:string
 ){
 
 
-
-  const visuals =
-    detectVisual(topic);
-
-
-
-  return [
-
-
-    {
-
-      narration:
-      `${topic} has a fascinating story that started with a simple idea and later became an important part of modern life.`,
-
-
-      searchQueries:[
-
-        visuals[0] ??
-        "technology",
-
-        visuals[1] ??
-        "innovation"
-
-      ]
-
-    },
+const visuals =
+detectVisual(topic);
 
 
 
-    {
+return [
+
+{
+
+narration:
+`${topic} has a fascinating story that started with a simple idea and later became an important part of modern life.`,
+
+searchQueries:[
+
+visuals[0] ?? "technology",
+
+visuals[1] ?? "innovation"
+
+]
+
+},
 
 
-      narration:
-      "Engineers and scientists developed this technology by solving difficult problems and creating new solutions.",
+{
+
+narration:
+"Engineers and scientists developed this technology by solving difficult problems and creating new solutions.",
+
+searchQueries:[
+
+visuals[2] ?? "engineering",
+
+visuals[3] ?? "laboratory"
+
+]
+
+},
 
 
-      searchQueries:[
+{
 
-        visuals[2] ??
-        "engineering",
+narration:
+"Over time, improvements made it faster, smaller and easier for everyone to use around the world.",
 
-        visuals[3] ??
-        "laboratory"
+searchQueries:[
 
-      ]
+"technology evolution",
 
+"modern innovation"
 
-    },
+]
 
-
-
-    {
+},
 
 
-      narration:
-      "Over time, improvements made it faster, smaller and easier for everyone to use around the world.",
+{
+
+narration:
+"Today, this invention works silently in the background and helps millions of people every day.",
+
+searchQueries:[
+
+"people using technology",
+
+"digital lifestyle"
+
+]
+
+},
 
 
-      searchQueries:[
+{
 
-        "technology evolution",
+narration:
+random(ENDINGS),
 
-        "modern innovation"
+searchQueries:[
 
-      ]
+"future technology",
 
+"world technology"
 
-    },
+]
 
+}
 
-
-    {
-
-
-      narration:
-      "Today, this invention works silently in the background and helps millions of people every day.",
-
-
-      searchQueries:[
-
-        "people using technology",
-
-        "digital lifestyle"
-
-      ]
-
-
-    },
-
-
-
-    {
-
-
-      narration:
-      random(ENDINGS),
-
-
-      searchQueries:[
-
-        "future technology",
-
-        "world technology"
-
-      ]
-
-    }
-
-
-  ];
+];
 
 
 }
@@ -338,79 +277,63 @@ topic:string
 
 
 
-
 export class LocalBlueprintService {
 
 
-
-  public create(
-    research:ResearchResult
-  ):Blueprint {
-
+public create(
+research:ResearchResult
+):Blueprint{
 
 
-    const topic =
-
-      research.text
-      .split("\n")
-      .find(
-        line =>
-        line.toLowerCase()
-        .startsWith("topic")
-      )
-      ?.replace(
-        /topic:/i,
-        ""
-      )
-      .trim()
-      ??
-      "Unknown Technology";
+const topic =
+research.text
+.split("\n")
+.find(
+line =>
+line.toLowerCase()
+.startsWith("topic")
+)
+?.replace(
+ /topic:/i,
+ ""
+)
+.trim()
+??
+"Unknown Technology";
 
 
 
 
-
-    const cleanTopic =
-      topic.length > 5
-      ?
-      topic
-      :
-      "Unknown Technology";
-
+const cleanTopic =
+topic.length>5
+?
+topic
+:
+"Unknown Technology";
 
 
 
 
+return {
 
-    return {
+topic:cleanTopic,
 
+title:
+`The Hidden Story Behind ${cleanTopic}`,
 
-      topic:cleanTopic,
+description:
+`A short documentary explaining how ${cleanTopic} changed the world and why it matters today.`,
 
+hook:
+random(HOOKS),
 
-      title:
-      `The Hidden Story Behind ${cleanTopic}`,
+scenes:
+createScenes(cleanTopic)
 
-
-      description:
-      `A short documentary explaining how ${cleanTopic} changed the world and why it matters today.`,
-
-
-
-      hook:
-      random(HOOKS),
-
+};
 
 
-      scenes:
-      createScenes(cleanTopic)
-
-
-    };
-
-
-  }
-
+}
 
 
 }
