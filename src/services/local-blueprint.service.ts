@@ -7,31 +7,25 @@ import type {
 
 const HOOKS:string[] = [
 
-"Most people use this every day, but they don't know the real story behind it.",
+"Most people use this every day, but they don't know the incredible story behind it.",
 
-"This invention changed the world, but its origin is surprising.",
+"This invention looks simple, but its history changed the world.",
 
-"You probably use this technology without knowing how it works.",
+"You use this technology constantly, but almost nobody knows how it started.",
 
-"The hidden story behind this everyday technology is fascinating.",
-
-"This simple idea became one of the biggest inventions in history."
+"The hidden story behind this invention is more surprising than you think."
 
 ];
-
-
 
 
 
 const ENDINGS:string[] = [
 
-"This is why this technology became part of modern life.",
+"This is why this technology became an important part of modern life.",
 
-"Today, millions of people use it without thinking about its hidden history.",
+"Today billions of people use it without knowing its fascinating history.",
 
-"A simple idea became a technology that changed the world.",
-
-"Behind everyday objects, there is always a surprising story."
+"A simple idea became one of the technologies that shaped our world."
 
 ];
 
@@ -39,10 +33,7 @@ const ENDINGS:string[] = [
 
 
 
-
-
-const VISUAL_MAP:
-Record<string,string[]> = {
+const VISUAL_MAP:Record<string,string[]> = {
 
 
 wifi:[
@@ -53,7 +44,7 @@ wifi:[
 
 "computer network",
 
-"technology laboratory"
+"internet technology"
 
 ],
 
@@ -63,7 +54,7 @@ gps:[
 
 "GPS satellite earth",
 
-"navigation map animation",
+"navigation technology",
 
 "satellite communication",
 
@@ -93,9 +84,7 @@ ai:[
 
 "robot technology",
 
-"AI computer",
-
-"futuristic technology"
+"future AI"
 
 ],
 
@@ -105,19 +94,16 @@ default:[
 
 "technology documentary",
 
-"modern computer",
-
 "innovation laboratory",
 
-"digital world"
+"digital world",
+
+"modern computer"
 
 ]
 
+
 };
-
-
-
-
 
 
 
@@ -137,7 +123,6 @@ Math.random()*array.length
 ];
 
 
-
 if(value===undefined){
 
 throw new Error(
@@ -147,12 +132,9 @@ throw new Error(
 }
 
 
-
 return value;
 
-
 }
-
 
 
 
@@ -177,18 +159,16 @@ for(
 const item of Object.keys(VISUAL_MAP)
 ){
 
-
-const visuals =
+const value =
 VISUAL_MAP[item];
-
 
 
 if(
 key.includes(item) &&
-visuals !== undefined
+value
 ){
 
-return visuals;
+return value;
 
 }
 
@@ -197,15 +177,10 @@ return visuals;
 
 
 
-return [
+return VISUAL_MAP.default ??
+[
 
-"technology documentary",
-
-"modern computer",
-
-"innovation laboratory",
-
-"digital world"
+"technology documentary"
 
 ];
 
@@ -224,6 +199,7 @@ function createScenes(
 topic:string
 ){
 
+
 const visuals =
 detectVisual(topic);
 
@@ -235,7 +211,7 @@ return [
 {
 
 narration:
-`${topic} has a fascinating story that started with a simple idea and later became an important part of modern life.`,
+`${topic} started with a simple idea, but it became one of the most important technologies in modern life. Behind this invention there are years of research, engineering and unexpected discoveries.`,
 
 searchQueries:[
 
@@ -251,8 +227,10 @@ visuals[1] ?? "innovation"
 
 {
 
+
 narration:
-"Engineers and scientists developed this technology by solving difficult problems and creating new solutions.",
+"Scientists and engineers had to solve many difficult problems before this technology became possible. Every improvement made it faster, smaller and more useful for people around the world.",
+
 
 searchQueries:[
 
@@ -268,25 +246,10 @@ visuals[3] ?? "laboratory"
 
 {
 
-narration:
-"Over time, improvements made it faster, smaller and easier for everyone to use around the world.",
-
-searchQueries:[
-
-"technology evolution",
-
-"modern innovation"
-
-]
-
-},
-
-
-
-{
 
 narration:
-"Today, this invention works silently in the background and helps millions of people every day.",
+"Over time this invention entered our daily lives. Many people use it every day without realizing how much science and creativity exists behind it.",
+
 
 searchQueries:[
 
@@ -302,14 +265,35 @@ searchQueries:[
 
 {
 
+
 narration:
-random(ENDINGS),
+"Today this technology continues to improve and researchers are still finding new ways to make it more powerful, efficient and accessible.",
+
 
 searchQueries:[
 
 "future technology",
 
-"world technology"
+"innovation"
+
+]
+
+},
+
+
+
+{
+
+
+narration:
+random(ENDINGS),
+
+
+searchQueries:[
+
+"world technology",
+
+"future innovation"
 
 ]
 
@@ -337,7 +321,6 @@ research:ResearchResult
 ):Blueprint{
 
 
-
 const topic =
 
 research.text
@@ -358,21 +341,12 @@ line.toLowerCase()
 
 
 
-
 const cleanTopic =
-
-topic.length > 5
-
+topic.length>5
 ?
-
 topic
-
 :
-
 "Unknown Technology";
-
-
-
 
 
 
@@ -389,7 +363,7 @@ title:
 
 
 description:
-`A short documentary explaining how ${cleanTopic} changed the world and why it matters today.`,
+`A documentary style explanation about ${cleanTopic} and how it changed modern technology.`,
 
 
 
@@ -406,9 +380,7 @@ createScenes(cleanTopic)
 };
 
 
-
 }
-
 
 
 }
