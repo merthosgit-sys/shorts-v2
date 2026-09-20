@@ -1,3 +1,6 @@
+import {
+ generateTopics
+} from './data/topic-engine.js';
 import { copyFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { config } from './config.js';
@@ -31,17 +34,88 @@ async function main(): Promise<void> {
   const finalVideosDirectory = path.join(config.outputDir, 'final-videos');
   await Promise.all([ensureDir(batchDirectory), ensureDir(finalVideosDirectory)]);
 
-  let topics: readonly TopicPlan[];
-  if (config.topics.length > 0) {
-    topics = config.topics.map((topic) => ({
+let topics: readonly TopicPlan[];
+
+
+
+if(config.topics.length > 0){
+
+
+  topics =
+  config.topics.map(
+    (topic)=>({
+
       topic,
-      angle: `Explain the most surprising, concrete fact about ${topic}.`,
-    }));
-    console.log(`Using ${topics.length} manually selected topic(s).`);
-  } else {
-    console.log(`Planning ${config.batchCount} distinct topic(s)...`);
-    topics = await gemini.planTopics(config.niche, config.language, config.batchCount);
+
+      angle:
+      `Explain the most surprising and interesting facts about ${topic}.`
+
+    })
+  );
+
+
+  console.log(
+    `Using ${topics.length} manually selected topic(s).`
+  );
+
+
+
+}else{
+
+
+  console.log(
+    `Generating ${config.batchCount} unique local topics...`
+  );
+
+
+  try{
+
+
+    topics =
+    await gemini.planTopics(
+      config.niche,
+      config.language,
+      config.batchCount
+    );
+
+
+    console.log(
+      "Gemini topic planner used."
+    );
+
+
   }
+  catch(error){
+
+
+    console.log(
+      "Gemini unavailable. Using Local Topic Engine."
+    );
+
+
+    const generated =
+    await generateTopics(
+      config.batchCount
+    );
+
+
+
+    topics =
+    generated.map(
+      item=>({
+
+        topic:item.topic,
+
+        angle:item.angle
+
+      })
+    );
+
+
+  }
+
+
+}
 
   await writeFile(path.join(batchDirectory, 'topic-plan.json'), JSON.stringify({ topics }, null, 2), 'utf8');
 
