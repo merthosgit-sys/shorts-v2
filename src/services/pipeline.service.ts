@@ -1,3 +1,6 @@
+import {
+ generateTopics
+} from '../data/topic-engine.js';
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Blueprint, ResearchResult, ResolvedScene } from '../domain/blueprint.js';
