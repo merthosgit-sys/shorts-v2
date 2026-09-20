@@ -154,7 +154,7 @@ export class FfmpegService {
       throw new Error(`QC failed: expected H.264 video, received ${String(video.codec_name)}`);
     }
     if (!audio) throw new Error('QC failed: rendered file has no audio stream');
-    if (!Number.isFinite(durationSeconds) || durationSeconds < 15 || durationSeconds > 55) {
+    if (!Number.isFinite(durationSeconds) || durationSeconds < 35 || durationSeconds > 60) {
       throw new Error(`QC failed: duration ${String(durationSeconds)} seconds is outside 15-55 second target`);
     }
 
