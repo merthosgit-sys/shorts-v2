@@ -1,14 +1,11 @@
-import { existsSync } from "node:fs";
-import { readFile, writeFile } from "node:fs/promises";
+import {
+hasVideo,
+addVideo
+} from "./video-memory.js";
 
 
 
-const HISTORY_FILE =
-"./output/topic-history.json";
-
-
-
-const CATEGORIES = {
+const SUBJECTS = {
 
 
 technology:[
@@ -19,15 +16,14 @@ technology:[
 "QR Codes",
 "Smartphones",
 "Artificial Intelligence",
-"Internet",
-"Microchips",
 "Robots",
+"Microchips",
 "Electric Cars",
 "Satellites",
+"Internet",
+"Battery Technology",
 "Virtual Reality",
-"3D Printing",
-"Computer History",
-"Battery Technology"
+"3D Printing"
 
 ],
 
@@ -35,16 +31,15 @@ technology:[
 science:[
 
 "Black Holes",
-"Quantum Physics",
 "DNA",
-"Human Brain",
+"Quantum Physics",
 "Gravity",
 "Lightning",
-"Volcanoes",
-"Deep Ocean",
-"Evolution",
 "Time",
-"Energy"
+"Energy",
+"Human Brain",
+"Ocean",
+"Volcanoes"
 
 ],
 
@@ -52,15 +47,13 @@ science:[
 history:[
 
 "Ancient Machines",
-"Forgotten Inventions",
+"Lost Inventions",
 "First Computers",
-"First Airplanes",
-"Old Engineering",
-"Lost Technologies",
-"Famous Discoveries"
+"Old Cars",
+"Early Aviation",
+"Forgotten Scientists"
 
 ],
-
 
 
 engineering:[
@@ -68,13 +61,11 @@ engineering:[
 "Bridges",
 "Skyscrapers",
 "Power Plants",
-"Aircraft Engines",
-"Electric Motors",
+"Engines",
 "Factories",
-"Construction Machines"
+"Electrical Systems"
 
 ],
-
 
 
 daily:[
@@ -85,8 +76,7 @@ daily:[
 "LED Lights",
 "Microwave",
 "Elevator",
-"Printer",
-"Refrigerator"
+"Printer"
 
 ]
 
@@ -97,101 +87,75 @@ daily:[
 
 
 
-const FORMATS=[
 
-"The hidden story behind {x}",
+const TITLE_PATTERNS=[
 
-"How {x} changed the world",
 
-"Why was {x} invented?",
+"The Hidden Story Behind {x}",
 
-"The surprising truth about {x}",
 
-"How does {x} actually work?",
+"How {x} Changed The World",
 
-"The technology secret of {x}",
 
-"Nobody explains {x} like this",
+"Why Was {x} Invented?",
 
-"The forgotten history of {x}"
+
+"How Does {x} Really Work?",
+
+
+"The Forgotten History Of {x}",
+
+
+"The Technology Secret Of {x}",
+
+
+"The Surprising Truth About {x}",
+
+
+"Nobody Explains {x} Like This"
+
 
 ];
+
 
 
 
 
 const ANGLES=[
 
-"origin story",
-
-"how it works",
-
-"hidden technology",
-
 "history",
-
-"future impact",
 
 "engineering",
 
-"unknown facts"
+"unknown facts",
+
+"future technology",
+
+"how it works",
+
+"origin story",
+
+"hidden details"
 
 ];
 
 
 
 
-function random<T>(arr:T[]):T{
 
-return arr[
+
+
+function random<T>(
+array:T[]
+):T{
+
+return array[
 Math.floor(
-Math.random()*arr.length
+Math.random()*array.length
 )
 ];
 
 }
-
-
-
-
-
-async function loadHistory():Promise<string[]>{
-
-if(!existsSync(HISTORY_FILE))
-return [];
-
-
-return JSON.parse(
-await readFile(
-HISTORY_FILE,
-"utf8"
-)
-);
-
-
-}
-
-
-
-
-
-
-
-async function saveHistory(
-data:string[]
-){
-
-await writeFile(
-HISTORY_FILE,
-JSON.stringify(
-data,
-null,
-2
-)
-);
-
-}
-
 
 
 
@@ -202,82 +166,91 @@ null,
 export async function generateUniqueTopic(){
 
 
-
-const history =
-await loadHistory();
+let attempts=0;
 
 
 
-let result;
-
-
-
-let tries=0;
-
-
-
-while(tries<100){
+while(attempts<500){
 
 
 const category =
 random(
-Object.keys(CATEGORIES)
+Object.keys(SUBJECTS)
 );
 
 
 
 const subject =
 random(
-(CATEGORIES as any)[category]
+(SUBJECTS as any)[category]
 );
 
 
 
-const format =
-random(FORMATS);
+const pattern =
+random(
+TITLE_PATTERNS
+);
 
 
 
-const angle =
-random(ANGLES);
-
-
-
-result =
-format.replace(
+const title =
+pattern.replace(
 "{x}",
 subject
 );
 
 
 
-const id =
-`${result}-${angle}`;
+const angle =
+random(
+ANGLES
+);
 
 
 
 if(
-!history.includes(id)
+await hasVideo(title)
 ){
 
-history.push(id);
+attempts++;
 
-await saveHistory(
-history
-);
+continue;
+
+}
+
+
+
+
+await addVideo({
+
+title,
+
+topic:subject,
+
+hook:
+`The hidden truth behind ${subject}`,
+
+angle,
+
+createdAt:
+new Date()
+.toISOString()
+
+});
+
+
+
 
 
 return {
 
 
-topic:result,
-
+topic:title,
 
 baseTopic:subject,
 
-
 category,
-
 
 angle,
 
@@ -286,13 +259,14 @@ searchQueries:[
 
 subject,
 
-category,
+`${subject} technology`,
 
-"technology documentary",
+"documentary",
 
-"cinematic documentary"
+"cinematic technology"
 
 ]
+
 
 };
 
@@ -300,19 +274,13 @@ category,
 }
 
 
-tries++;
-
-
-}
-
-
-
 
 throw new Error(
-"No unique topics available"
+"Unique topic generation failed"
 );
 
 
+
 }
 
 
@@ -321,13 +289,12 @@ throw new Error(
 
 
 
-
-export async function generateBatch(
+export async function generateTopics(
 count:number
 ){
 
 
-const topics=[];
+const result=[];
 
 
 for(
@@ -336,14 +303,14 @@ i<count;
 i++
 ){
 
-topics.push(
+result.push(
 await generateUniqueTopic()
 );
 
 }
 
 
-return topics;
+return result;
 
 
 }
