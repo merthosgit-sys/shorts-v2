@@ -14,23 +14,23 @@ export class LocalAIService {
 
 
 
-  public generateResearch(
-    topic:string
-  ):ResearchResult{
+public generateResearch(
+topic:string
+):ResearchResult{
 
 
-    const item =
-    TOPIC_LIBRARY.find(
-      x => x.topic === topic
-    );
+const item =
+TOPIC_LIBRARY.find(
+(x)=>x.topic===topic
+);
 
 
 
-    if(!item){
+if(!item){
 
-      return {
+return {
 
-        text:
+text:
 `
 Topic:
 ${topic}
@@ -38,29 +38,25 @@ ${topic}
 Main facts:
 
 ${topic} is an interesting subject.
-It has a story connected with technology,
-science and everyday life.
+It connects technology, science and everyday life.
 
 `,
 
-        sources:[]
+sources:[]
 
-      };
+};
 
-    }
-
-
+}
 
 
 
-    return {
 
+return {
 
-      text:
+text:
 `
 Topic:
 ${item.topic}
-
 
 Main facts:
 
@@ -68,115 +64,111 @@ ${item.facts.join("\n")}
 
 `,
 
-      sources:[]
+sources:[]
 
-    };
-
-
-  }
+};
 
 
+}
 
 
 
 
 
-  public generateBlueprint(
-    topic:string
-  ):Blueprint{
+
+
+public generateBlueprint(
+topic:string
+):Blueprint{
+
+
+const item =
+TOPIC_LIBRARY.find(
+(x)=>x.topic===topic
+);
 
 
 
-    const item =
-    TOPIC_LIBRARY.find(
-      x=>x.topic===topic
-    );
+const facts:string[] =
+item?.facts ??
+[
+
+"Technology changes the way people live.",
+
+"Engineers improve this technology over time.",
+
+"Millions of people use it today."
+
+];
 
 
 
-    const facts =
-    item?.facts ??
-    [
+const visuals:string[] =
+item?.visuals ??
+[
 
-      "Technology changes the way people live.",
+"technology animation",
 
-      "Engineers improve this technology over time.",
+"computer laboratory",
 
-      "Today millions of people use it."
+"modern innovation"
 
-    ];
-
-
-
-    const visuals =
-    item?.visuals ??
-    [
-
-      "technology animation",
-
-      "computer laboratory",
-
-      "modern innovation"
-
-    ];
-
-
-
-
-
-    return {
-
-
-
-      topic,
-
-
-      title:
-      `The Hidden Story Behind ${topic}`,
-
-
-      description:
-      `A short documentary explaining the history and technology behind ${topic}.`,
-
-
-
-      hook:
-      item?.hook ??
-      `The hidden story behind ${topic} is more interesting than you think.`,
+];
 
 
 
 
-      scenes:
 
-      facts
-      .slice(0,5)
-      .map(
-        (fact,index)=>({
-
-          narration:fact,
+return {
 
 
-          searchQueries:[
+topic,
 
-            visuals[index % visuals.length],
 
-            "technology documentary"
-
-          ]
-
-        })
-
-      )
+title:
+`The Hidden Story Behind ${topic}`,
 
 
 
-    };
+description:
+`A short documentary explaining the history and technology behind ${topic}.`,
 
 
-  }
+
+hook:
+item?.hook ??
+`The hidden story behind ${topic} is more interesting than you think.`,
 
 
+
+scenes:
+
+facts
+.slice(0,5)
+.map(
+(fact,index)=>({
+
+narration:fact,
+
+
+searchQueries:[
+
+visuals[index % visuals.length] ??
+"technology",
+
+"technology documentary"
+
+]
+
+})
+
+)
+
+
+};
+
+
+}
 
 
 
