@@ -33,7 +33,67 @@ export class ShortsPipelineService {
     private readonly tts: PiperTtsService,
     private readonly ffmpeg: FfmpegService,
   ) {}
+public async runAutomaticBatch(
+  count:number,
+  options:Omit<PipelineOptions,'requestedTopic'>
+){
 
+const topics =
+await generateTopics(count);
+
+
+const results=[];
+
+
+for(
+const [index,item]
+of topics.entries()
+){
+
+
+console.log(
+`
+========== VIDEO ${index+1}/${count} ==========
+`
+);
+
+
+console.log(
+"Generated Topic:",
+item.topic
+);
+
+
+
+const result =
+await this.run({
+
+...options,
+
+
+requestedTopic:item.topic,
+
+
+angle:item.angle,
+
+
+sequenceNumber:index+1
+
+});
+
+
+
+results.push(result);
+
+
+}
+
+
+
+return results;
+
+
+}
   public async prepare(): Promise<void> {
     await Promise.all([this.tts.ensureReady(), this.ffmpeg.ensureReady()]);
   }
