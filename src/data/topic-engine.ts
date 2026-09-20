@@ -1,29 +1,35 @@
-export const CATEGORIES = {
+import { existsSync } from "node:fs";
+import { readFile, writeFile } from "node:fs/promises";
+
+
+
+const HISTORY_FILE =
+"./output/topic-history.json";
+
+
+
+const CATEGORIES = {
 
 
 technology:[
 
 "WiFi",
 "Bluetooth",
-"QR Codes",
 "GPS",
+"QR Codes",
 "Smartphones",
 "Artificial Intelligence",
 "Internet",
-"Computer History",
-"Robotics",
-"Electric Cars",
-"Battery Technology",
 "Microchips",
+"Robots",
+"Electric Cars",
 "Satellites",
-"Space Technology",
 "Virtual Reality",
 "3D Printing",
-"Cloud Computing",
-"Cybersecurity"
+"Computer History",
+"Battery Technology"
 
 ],
-
 
 
 science:[
@@ -33,33 +39,25 @@ science:[
 "DNA",
 "Human Brain",
 "Gravity",
-"Atoms",
-"Time",
-"Energy",
 "Lightning",
 "Volcanoes",
 "Deep Ocean",
 "Evolution",
-"Weather",
-"Plants",
-"Animals"
+"Time",
+"Energy"
 
 ],
 
 
-
 history:[
 
-"Ancient Inventions",
-"Lost Technologies",
-"Famous Discoveries",
-"Old Machines",
+"Ancient Machines",
+"Forgotten Inventions",
 "First Computers",
-"First Cars",
 "First Airplanes",
-"Ancient Engineering",
-"Historical Mysteries",
-"Forgotten Scientists"
+"Old Engineering",
+"Lost Technologies",
+"Famous Discoveries"
 
 ],
 
@@ -68,15 +66,12 @@ history:[
 engineering:[
 
 "Bridges",
-"Buildings",
+"Skyscrapers",
 "Power Plants",
-"Electrical Systems",
-"Engines",
-"Aircraft",
-"Ships",
+"Aircraft Engines",
+"Electric Motors",
 "Factories",
-"Machines",
-"Construction Technology"
+"Construction Machines"
 
 ],
 
@@ -84,18 +79,17 @@ engineering:[
 
 daily:[
 
-"Coffee Machines",
-"Microwave Ovens",
-"Elevators",
-"Barcode",
 "Keyboard",
-"Touchscreens",
-"Camera Technology",
+"Barcode",
+"Camera",
 "LED Lights",
-"Refrigerators",
-"Printers"
+"Microwave",
+"Elevator",
+"Printer",
+"Refrigerator"
 
 ]
+
 
 };
 
@@ -103,125 +97,77 @@ daily:[
 
 
 
-const HOOKS=[
+const FORMATS=[
 
 "The hidden story behind {x}",
+
+"How {x} changed the world",
 
 "Why was {x} invented?",
 
 "The surprising truth about {x}",
 
-"How {x} changed the world",
-
-"You use {x} every day but don't know this",
+"How does {x} actually work?",
 
 "The technology secret of {x}",
 
 "Nobody explains {x} like this",
 
-"The forgotten history of {x}",
-
-"How does {x} actually work?"
+"The forgotten history of {x}"
 
 ];
-
 
 
 
 
 const ANGLES=[
 
+"origin story",
+
+"how it works",
+
+"hidden technology",
+
 "history",
-
-"technology",
-
-"science",
-
-"engineering",
-
-"unknown facts",
 
 "future impact",
 
-"how it works"
+"engineering",
+
+"unknown facts"
 
 ];
 
 
 
 
+function random<T>(arr:T[]):T{
 
-
-const VISUALS={
-
-
-technology:[
-
-"computer laboratory",
-"digital technology",
-"futuristic interface",
-"engineers working",
-"electronic devices"
-
-],
-
-
-science:[
-
-"science laboratory",
-"space animation",
-"microscope",
-"scientists research",
-"nature documentary"
-
-],
-
-
-history:[
-
-"old photograph",
-"ancient machine",
-"historical documentary",
-"museum artifact",
-"old technology"
-
-],
-
-
-engineering:[
-
-"engineering project",
-"construction site",
-"machines working",
-"industrial factory",
-"technology animation"
-
-],
-
-
-daily:[
-
-"modern home",
-"everyday object",
-"close up product",
-"people using technology",
-"modern lifestyle"
-
-]
-
-
-};
-
-
-
-
-
-
-function random<T>(array:T[]):T{
-
-return array[
-Math.floor(Math.random()*array.length)
+return arr[
+Math.floor(
+Math.random()*arr.length
+)
 ];
+
+}
+
+
+
+
+
+async function loadHistory():Promise<string[]>{
+
+if(!existsSync(HISTORY_FILE))
+return [];
+
+
+return JSON.parse(
+await readFile(
+HISTORY_FILE,
+"utf8"
+)
+);
+
 
 }
 
@@ -231,23 +177,46 @@ Math.floor(Math.random()*array.length)
 
 
 
-export interface GeneratedTopic {
+async function saveHistory(
+data:string[]
+){
 
-
-topic:string;
-
-angle:string;
-
-category:string;
-
-searchQueries:string[];
+await writeFile(
+HISTORY_FILE,
+JSON.stringify(
+data,
+null,
+2
+)
+);
 
 }
 
 
 
 
-export function generateTopic():GeneratedTopic{
+
+
+
+
+export async function generateUniqueTopic(){
+
+
+
+const history =
+await loadHistory();
+
+
+
+let result;
+
+
+
+let tries=0;
+
+
+
+while(tries<100){
 
 
 const category =
@@ -264,36 +233,66 @@ random(
 
 
 
-const hook =
-random(HOOKS)
-.replace(
+const format =
+random(FORMATS);
+
+
+
+const angle =
+random(ANGLES);
+
+
+
+result =
+format.replace(
 "{x}",
 subject
 );
 
 
 
+const id =
+`${result}-${angle}`;
+
+
+
+if(
+!history.includes(id)
+){
+
+history.push(id);
+
+await saveHistory(
+history
+);
+
+
 return {
 
 
-topic:
-hook,
+topic:result,
 
 
-angle:
-random(ANGLES),
+baseTopic:subject,
 
 
 category,
 
 
-searchQueries:
-[
-subject,
-...(VISUALS as any)[category]
-.slice(0,3)
-]
+angle,
 
+
+searchQueries:[
+
+subject,
+
+category,
+
+"technology documentary",
+
+"cinematic documentary"
+
+]
 
 };
 
@@ -301,42 +300,50 @@ subject,
 }
 
 
+tries++;
+
+
+}
+
+
+
+
+throw new Error(
+"No unique topics available"
+);
+
+
+}
 
 
 
 
 
-export function generateTopics(
+
+
+
+export async function generateBatch(
 count:number
 ){
 
 
-const results:GeneratedTopic[]=[];
+const topics=[];
 
 
-while(results.length<count){
-
-
-const topic =
-generateTopic();
-
-
-
-if(
-!results.find(
-x=>x.topic===topic.topic
-)
+for(
+let i=0;
+i<count;
+i++
 ){
 
-results.push(topic);
+topics.push(
+await generateUniqueTopic()
+);
 
 }
 
 
-}
-
-
-return results;
+return topics;
 
 
 }
