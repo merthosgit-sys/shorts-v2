@@ -1,85 +1,83 @@
 import {
-hasVideo,
-addVideo
+  hasVideo,
+  addVideo
 } from "./video-memory.js";
 
 
-
-const SUBJECTS = {
-
-
-technology:[
-
-"WiFi",
-"Bluetooth",
-"GPS",
-"QR Codes",
-"Smartphones",
-"Artificial Intelligence",
-"Robots",
-"Microchips",
-"Electric Cars",
-"Satellites",
-"Internet",
-"Battery Technology",
-"Virtual Reality",
-"3D Printing"
-
-],
+const SUBJECTS: Record<string, string[]> = {
 
 
-science:[
+  technology: [
 
-"Black Holes",
-"DNA",
-"Quantum Physics",
-"Gravity",
-"Lightning",
-"Time",
-"Energy",
-"Human Brain",
-"Ocean",
-"Volcanoes"
+    "WiFi",
+    "Bluetooth",
+    "GPS",
+    "QR Codes",
+    "Smartphones",
+    "Artificial Intelligence",
+    "Robots",
+    "Microchips",
+    "Electric Cars",
+    "Satellites",
+    "Internet",
+    "Battery Technology",
+    "Virtual Reality",
+    "3D Printing"
 
-],
-
-
-history:[
-
-"Ancient Machines",
-"Lost Inventions",
-"First Computers",
-"Old Cars",
-"Early Aviation",
-"Forgotten Scientists"
-
-],
+  ],
 
 
-engineering:[
+  science: [
 
-"Bridges",
-"Skyscrapers",
-"Power Plants",
-"Engines",
-"Factories",
-"Electrical Systems"
+    "Black Holes",
+    "DNA",
+    "Quantum Physics",
+    "Gravity",
+    "Lightning",
+    "Time",
+    "Energy",
+    "Human Brain",
+    "Ocean",
+    "Volcanoes"
 
-],
+  ],
 
 
-daily:[
+  history: [
 
-"Keyboard",
-"Barcode",
-"Camera",
-"LED Lights",
-"Microwave",
-"Elevator",
-"Printer"
+    "Ancient Machines",
+    "Lost Inventions",
+    "First Computers",
+    "Old Cars",
+    "Early Aviation",
+    "Forgotten Scientists"
 
-]
+  ],
 
+
+  engineering: [
+
+    "Bridges",
+    "Skyscrapers",
+    "Power Plants",
+    "Engines",
+    "Factories",
+    "Electrical Systems"
+
+  ],
+
+
+  daily: [
+
+    "Keyboard",
+    "Barcode",
+    "Camera",
+    "LED Lights",
+    "Microwave",
+    "Elevator",
+    "Printer"
+
+  ]
 
 };
 
@@ -87,33 +85,23 @@ daily:[
 
 
 
+const TITLE_PATTERNS:string[] = [
 
-const TITLE_PATTERNS=[
+  "The Hidden Story Behind {x}",
 
+  "How {x} Changed The World",
 
-"The Hidden Story Behind {x}",
+  "Why Was {x} Invented?",
 
+  "How Does {x} Really Work?",
 
-"How {x} Changed The World",
+  "The Forgotten History Of {x}",
 
+  "The Technology Secret Of {x}",
 
-"Why Was {x} Invented?",
+  "The Surprising Truth About {x}",
 
-
-"How Does {x} Really Work?",
-
-
-"The Forgotten History Of {x}",
-
-
-"The Technology Secret Of {x}",
-
-
-"The Surprising Truth About {x}",
-
-
-"Nobody Explains {x} Like This"
-
+  "Nobody Explains {x} Like This"
 
 ];
 
@@ -121,21 +109,21 @@ const TITLE_PATTERNS=[
 
 
 
-const ANGLES=[
+const ANGLES:string[] = [
 
-"history",
+  "history",
 
-"engineering",
+  "engineering",
 
-"unknown facts",
+  "unknown facts",
 
-"future technology",
+  "future technology",
 
-"how it works",
+  "how it works",
 
-"origin story",
+  "origin story",
 
-"hidden details"
+  "hidden details"
 
 ];
 
@@ -145,17 +133,33 @@ const ANGLES=[
 
 
 
-function random<T>(
-array:T[]
-):T{
 
-return array[
-Math.floor(
-Math.random()*array.length
-)
-];
+function random<T>(array:T[]):T {
+
+
+  const item =
+    array[
+      Math.floor(
+        Math.random() * array.length
+      )
+    ];
+
+
+  if(item === undefined){
+
+    throw new Error(
+      "Cannot choose from empty array"
+    );
+
+  }
+
+
+  return item;
+
 
 }
+
+
 
 
 
@@ -166,122 +170,130 @@ Math.random()*array.length
 export async function generateUniqueTopic(){
 
 
-let attempts=0;
+  let attempts = 0;
 
 
 
-while(attempts<500){
-
-
-const category =
-random(
-Object.keys(SUBJECTS)
-);
+  while(attempts < 500){
 
 
 
-const subject =
-random(
-(SUBJECTS as any)[category]
-);
+    const category =
+      random(
+        Object.keys(SUBJECTS)
+      );
 
 
 
-const pattern =
-random(
-TITLE_PATTERNS
-);
+    const subjects =
+      SUBJECTS[category];
 
 
 
-const title =
-pattern.replace(
-"{x}",
-subject
-);
+    const subject =
+      random(subjects);
 
 
 
-const angle =
-random(
-ANGLES
-);
+    const pattern =
+      random(TITLE_PATTERNS);
 
 
 
-if(
-await hasVideo(title)
-){
+    const title =
+      pattern.replace(
+        "{x}",
+        subject
+      );
 
-attempts++;
 
-continue;
+
+    const angle =
+      random(ANGLES);
+
+
+
+
+    if(
+      await hasVideo(title)
+    ){
+
+      attempts++;
+
+      continue;
+
+    }
+
+
+
+
+
+    await addVideo({
+
+      title,
+
+      topic:subject,
+
+      hook:
+      `The hidden truth behind ${subject}`,
+
+      angle,
+
+      createdAt:
+      new Date().toISOString()
+
+    });
+
+
+
+
+
+
+    return {
+
+
+      topic:title,
+
+
+      baseTopic:subject,
+
+
+      category,
+
+
+      angle,
+
+
+      searchQueries:[
+
+        subject,
+
+        `${subject} technology`,
+
+        "documentary",
+
+        "cinematic technology"
+
+      ]
+
+
+    };
+
+
+
+  }
+
+
+
+
+  throw new Error(
+    "Unique topic generation failed"
+  );
+
+
 
 }
 
-
-
-
-await addVideo({
-
-title,
-
-topic:subject,
-
-hook:
-`The hidden truth behind ${subject}`,
-
-angle,
-
-createdAt:
-new Date()
-.toISOString()
-
-});
-
-
-
-
-
-return {
-
-
-topic:title,
-
-baseTopic:subject,
-
-category,
-
-angle,
-
-
-searchQueries:[
-
-subject,
-
-`${subject} technology`,
-
-"documentary",
-
-"cinematic technology"
-
-]
-
-
-};
-
-
-}
-
-
-
-throw new Error(
-"Unique topic generation failed"
-);
-
-
-
-}
 
 
 
@@ -290,27 +302,30 @@ throw new Error(
 
 
 export async function generateTopics(
-count:number
+  count:number
 ){
 
 
-const result=[];
+  const result:
+  Awaited<ReturnType<typeof generateUniqueTopic>>[] = [];
 
 
-for(
-let i=0;
-i<count;
-i++
-){
 
-result.push(
-await generateUniqueTopic()
-);
+  for(
+    let i=0;
+    i<count;
+    i++
+  ){
 
-}
+    result.push(
+      await generateUniqueTopic()
+    );
+
+  }
 
 
-return result;
+
+  return result;
 
 
 }
