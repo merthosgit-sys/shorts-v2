@@ -7,281 +7,868 @@ import {
   type TopicPlan,
 } from '../domain/blueprint.js';
 
-const MAX_RETRIES = 5;
-const BASE_DELAY_MS = 2_000;
+
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 2000;
+
 
 interface ErrorLike {
-  readonly status: number | string | undefined;
-  readonly code: number | string | undefined;
-  readonly message: string | undefined;
+  readonly status?: number | string;
+  readonly code?: number | string;
+  readonly message?: string;
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
+
+
+function sleep(ms:number):Promise<void>{
+
+  return new Promise(resolve=>{
+    setTimeout(resolve,ms);
   });
+
 }
 
-function toErrorLike(error: unknown): ErrorLike {
-  if (typeof error !== 'object' || error === null) {
-    return { status: undefined, code: undefined, message: undefined };
+
+
+function getError(error:unknown):ErrorLike{
+
+  if(typeof error !== 'object' || error===null){
+
+    return {};
+
   }
 
-  const record = error as Record<string, unknown>;
+
+  const e = error as Record<string,unknown>;
+
 
   return {
+
     status:
-      typeof record.status === 'number' || typeof record.status === 'string'
-        ? record.status
-        : undefined,
+      typeof e.status === 'string' || typeof e.status === 'number'
+      ? e.status
+      : undefined,
+
+
     code:
-      typeof record.code === 'number' || typeof record.code === 'string'
-        ? record.code
-        : undefined,
-    message: typeof record.message === 'string' ? record.message : undefined,
+      typeof e.code === 'string' || typeof e.code === 'number'
+      ? e.code
+      : undefined,
+
+
+    message:
+      typeof e.message === 'string'
+      ? e.message
+      : undefined
+
   };
+
 }
 
-function parseNumericCode(value: number | string | undefined): number | undefined {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value !== 'string') return undefined;
 
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
 
-function isRetryableGeminiError(error: unknown): boolean {
-  const parsed = toErrorLike(error);
-  const status = parseNumericCode(parsed.status);
-  const code = parseNumericCode(parsed.code);
-  const retryableCodes = new Set([429, 500, 502, 503, 504]);
 
-  if ((status !== undefined && retryableCodes.has(status)) || (code !== undefined && retryableCodes.has(code))) {
-    return true;
-  }
+function isQuotaError(error:unknown):boolean{
 
-  const message = parsed.message?.toLowerCase() ?? '';
+  const e=getError(error);
+
+  const msg=e.message?.toLowerCase() ?? "";
+
 
   return (
-    message.includes('high demand') ||
-    message.includes('unavailable') ||
-    message.includes('resource_exhausted') ||
-    message.includes('rate limit') ||
-    message.includes('too many requests') ||
-    message.includes('temporarily unavailable') ||
-    /"code"\s*:\s*(429|500|502|503|504)/u.test(message)
+
+    msg.includes("quota") ||
+    msg.includes("resource_exhausted") ||
+    msg.includes("429") ||
+    e.status===429 ||
+    e.code===429
+
   );
+
 }
 
-async function withRetry<T>(operationName: string, operation: () => Promise<T>): Promise<T> {
-  let lastError: unknown;
 
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt += 1) {
-    try {
-      return await operation();
-    } catch (error) {
-      lastError = error;
 
-      if (!isRetryableGeminiError(error) || attempt === MAX_RETRIES) {
-        break;
-      }
 
-      const exponentialDelay = BASE_DELAY_MS * 2 ** (attempt - 1);
-      const jitter = Math.floor(Math.random() * 1_000);
-      const delayMs = exponentialDelay + jitter;
 
-      console.warn(
-        `[Gemini] ${operationName} temporarily failed. ` +
-          `Attempt ${attempt}/${MAX_RETRIES}; retrying in ${Math.ceil(delayMs / 1_000)}s...`,
-      );
+async function withRetry<T>(
+name:string,
+fn:()=>Promise<T>
+):Promise<T>{
 
-      await sleep(delayMs);
-    }
-  }
 
-  const parsed = toErrorLike(lastError);
-  throw new Error(
-    `[Gemini] ${operationName} failed after ${MAX_RETRIES} attempts. ${parsed.message ?? 'Unknown Gemini API error'}`,
-    { cause: lastError },
-  );
+let lastError:unknown;
+
+
+
+for(let i=1;i<=MAX_RETRIES;i++){
+
+
+try{
+
+return await fn();
+
 }
+
+catch(error){
+
+
+lastError=error;
+
+
+
+if(isQuotaError(error)){
+
+throw error;
+
+}
+
+
+
+if(i===MAX_RETRIES){
+
+break;
+
+}
+
+
+
+await sleep(
+BASE_DELAY_MS*i
+);
+
+
+console.log(
+`[Gemini] ${name} retry ${i}/${MAX_RETRIES}`
+);
+
+
+}
+
+
+
+}
+
+
+
+throw lastError;
+
+
+
+}
+
+
+
+
+
+
 
 export class GeminiService {
-  readonly #client: GoogleGenAI;
-  readonly #model: string;
 
-  public constructor(apiKey: string, model: string) {
-    this.#client = new GoogleGenAI({ apiKey });
-    this.#model = model;
-  }
 
-  public async planTopics(niche: string, language: string, count: number): Promise<readonly TopicPlan[]> {
-    const response = await withRetry('Plan topics', async () => {
-      return this.#client.models.generateContent({
-        model: this.#model,
-        contents: [
-          `Plan exactly ${count} DIFFERENT YouTube Shorts topics for this niche: ${niche}.`,
-          `The videos will be narrated in ${language}.`,
-          '',
-          'Topic selection rules:',
-          '- Every topic must have a strong curiosity gap without deceptive clickbait.',
-          '- Prefer evergreen stories with a concrete event, invention, software incident, product, person or historical detail.',
-          '- Topics must be visually searchable on stock-video sites.',
-          '- Do not choose two topics about the same event or the same central fact.',
-          '- Avoid politics, medical advice, graphic tragedies, rumors and active controversies.',
-          '- Prefer topics explainable accurately in 25-45 seconds.',
-          '- angle must state the one surprising payoff the video should build toward.',
-        ].join('\n'),
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              topics: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    topic: { type: Type.STRING },
-                    angle: { type: Type.STRING },
-                  },
-                  required: ['topic', 'angle'],
-                },
-              },
-            },
-            required: ['topics'],
-          },
-        },
-      });
-    });
+readonly #client?:GoogleGenAI;
 
-    const text = response.text?.trim();
-    if (!text) throw new Error('Gemini topic planner returned an empty response');
+readonly #model:string;
 
-    const parsed = topicPlanSchema.parse(JSON.parse(text));
-    if (parsed.topics.length !== count) {
-      throw new Error(`Gemini topic planner returned ${parsed.topics.length} topics; expected ${count}`);
+
+
+constructor(
+apiKey:string,
+model:string
+){
+
+
+this.#model=model;
+
+
+if(apiKey?.trim()){
+
+this.#client =
+new GoogleGenAI({
+apiKey
+});
+
+}
+
+
+
+}
+export class GeminiService {
+
+  readonly #client?: GoogleGenAI;
+  readonly #model:string;
+
+
+  constructor(
+    apiKey:string,
+    model:string
+  ){
+
+    this.#model=model;
+
+    if(apiKey?.trim()){
+
+      this.#client =
+        new GoogleGenAI({
+          apiKey
+        });
+
     }
 
-    return parsed.topics;
   }
+
+
+
+
+
+  public async planTopics(
+    niche:string,
+    language:string,
+    count:number
+  ):Promise<readonly TopicPlan[]>{
+
+
+    if(!this.#client){
+
+      return this.localTopics(niche,count);
+
+    }
+
+
+
+    try{
+
+
+      const response =
+      await withRetry(
+      "Plan topics",
+      async()=>{
+
+        return this.#client!.models.generateContent({
+
+          model:this.#model,
+
+          contents:
+          `
+          Create ${count} YouTube Shorts topics.
+
+          Niche:
+          ${niche}
+
+          Language:
+          ${language}
+
+
+          Rules:
+
+          - curiosity driven
+          - evergreen
+          - visually searchable
+          - explainable in 30 seconds
+          - no fake claims
+
+          `,
+
+
+          config:{
+            responseMimeType:"application/json",
+
+            responseSchema:{
+
+              type:Type.OBJECT,
+
+              properties:{
+
+                topics:{
+                  type:Type.ARRAY,
+
+                  items:{
+
+                    type:Type.OBJECT,
+
+                    properties:{
+
+                      topic:{
+                        type:Type.STRING
+                      },
+
+                      angle:{
+                        type:Type.STRING
+                      }
+
+                    }
+
+                  }
+
+                }
+
+              }
+
+            }
+
+          }
+
+        });
+
+
+      });
+
+
+
+      const text=response.text?.trim();
+
+
+      if(!text)
+        throw new Error("empty response");
+
+
+      return topicPlanSchema.parse(
+        JSON.parse(text)
+      ).topics;
+
+
+
+    }
+    catch(error){
+
+
+      console.log(
+        "[LOCAL AI] Topic generator used"
+      );
+
+
+      return this.localTopics(
+        niche,
+        count
+      );
+
+
+    }
+
+
+
+  }
+
+
+
+
+
+
 
   public async researchTopic(
-    niche: string,
-    language: string,
-    requestedTopic: string,
-    angle?: string,
-  ): Promise<ResearchResult> {
-    const response = await withRetry('Research topic', async () => {
-      return this.#client.models.generateContent({
-        model: this.#model,
-        contents: [
-          `Research this exact topic for a short-form video: ${requestedTopic}`,
-          ...(angle ? [`Editorial angle: ${angle}`] : []),
-          `Niche: ${niche}`,
-          `The final YouTube Short will be narrated in ${language}.`,
-          '',
-          'Produce concise research notes for a 25-45 second vertical video.',
-          '',
-          'Rules:',
-          '- Prefer well-established facts and the least controversial version of events.',
-          '- Use concrete dates, people, companies, products or events only when confident.',
-          '- Do not invent statistics, quotes, dates or names.',
-          '- If a detail is uncertain, disputed or difficult to verify, exclude it.',
-          '- Avoid politics, medical advice, graphic incidents and ongoing tragedies.',
-          '- Keep one central story with one clear payoff.',
-          '- Separate essential facts from optional context.',
-          '',
-          'Return research notes only. Do not write the final script yet.',
-        ].join('\n'),
-      });
-    });
+    niche:string,
+    language:string,
+    requestedTopic:string,
+    angle?:string
 
-    const text = response.text?.trim();
-    if (!text) throw new Error('Gemini research returned an empty response');
+  ):Promise<ResearchResult>{
 
-    return { text, sources: [] };
-  }
 
-  public async createBlueprint(research: ResearchResult, niche: string, language: string): Promise<Blueprint> {
-    const response = await withRetry('Create blueprint', async () => {
-      return this.#client.models.generateContent({
-        model: this.#model,
-        contents: [
-          `Create a polished YouTube Shorts blueprint in ${language}.`,
-          `Niche: ${niche}`,
-          '',
-          'Target duration: 25-45 seconds.',
-          'Use 5-8 scenes and 55-95 narration words total.',
-          '',
-          'Retention rules:',
-          '- Scene 1 must give the hook immediately, with no greeting or setup phrase.',
-          '- Put a new fact, reversal or concrete detail every 3-6 seconds.',
-          '- Build toward one payoff. Do not reveal every detail in the first sentence.',
-          '- End on the payoff itself, not a generic call to action.',
-          '- No like/follow/subscribe requests.',
-          '- No filler such as "peki biliyor muydunuz" or repeated summaries.',
-          '',
-          'Narration rules:',
-          '- Natural spoken Turkish, compact sentences, easy pronunciation.',
-          '- Avoid long parenthetical clauses and tongue-twisting wording.',
-          '- Do not add facts absent from the research notes.',
-          '- Avoid exaggerated certainty and fake quotes.',
-          '',
-          'Visual rules:',
-          '- Every scene must contain 2-4 Pexels search queries in ENGLISH.',
-          '- Queries must describe what should literally be visible on screen.',
-          '- Prefer concrete nouns/actions/locations over abstract concepts.',
-          '- Vary the search queries so consecutive scenes do not look identical.',
-          '- Include era/context words when useful, e.g. "1990s computer lab".',
-          '',
-          'Title rules:',
-          '- Short, specific and curiosity-driven.',
-          '- No misleading superlatives or unsupported claims.',
-          '',
-          'RESEARCH NOTES:',
-          research.text,
-        ].join('\n'),
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              topic: { type: Type.STRING },
-              title: { type: Type.STRING },
-              description: { type: Type.STRING },
-              hook: { type: Type.STRING },
-              scenes: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    narration: { type: Type.STRING },
-                    searchQueries: {
-                      type: Type.ARRAY,
-                      items: { type: Type.STRING },
-                    },
-                  },
-                  required: ['narration', 'searchQueries'],
-                },
-              },
-            },
-            required: ['topic', 'title', 'description', 'hook', 'scenes'],
-          },
-        },
-      });
-    });
 
-    const text = response.text?.trim();
-    if (!text) throw new Error('Gemini blueprint returned an empty response');
+    if(this.#client){
 
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(text);
-    } catch (error) {
-      throw new Error(`Gemini blueprint returned invalid JSON: ${error instanceof Error ? error.message : String(error)}`);
+
+      try{
+
+
+        const response =
+        await withRetry(
+        "Research",
+        async()=>{
+
+
+          return this.#client!.models.generateContent({
+
+            model:this.#model,
+
+
+            contents:
+`
+Research this Shorts topic:
+
+${requestedTopic}
+
+
+Niche:
+${niche}
+
+
+Angle:
+${angle ?? ""}
+
+
+Give:
+
+- important facts
+- historical background
+- why people care
+- visual ideas
+
+
+Avoid:
+fake facts
+rumors
+unsupported claims
+
+`
+
+          });
+
+
+        });
+
+
+
+        const text=response.text?.trim();
+
+
+        if(text){
+
+          return {
+            text,
+            sources:[]
+          };
+
+        }
+
+
+
+      }
+      catch(error){
+
+
+        console.log(
+        "[LOCAL AI] Research fallback"
+        );
+
+
+      }
+
+
     }
 
-    return blueprintSchema.parse(parsed);
+
+
+
+
+    return {
+
+      text:
+`
+Topic:
+${requestedTopic}
+
+
+This topic is interesting because it connects technology,
+history and everyday life.
+
+The video should explain:
+- what it is
+- how it started
+- why it matters today
+
+
+Focus on simple facts and visual storytelling.
+
+`,
+
+      sources:[]
+
+    };
+
+
+
   }
+
+
+
+
+
+
+
+
+
+  public async createBlueprint(
+    research:ResearchResult,
+    niche:string,
+    language:string
+
+  ):Promise<Blueprint>{
+
+
+
+    if(this.#client){
+
+
+      try{
+
+
+        const response =
+        await withRetry(
+        "Blueprint",
+        async()=>{
+
+
+          return this.#client!.models.generateContent({
+
+            model:this.#model,
+
+
+            contents:
+`
+Create a YouTube Shorts blueprint.
+
+Language:
+${language}
+
+
+Niche:
+${niche}
+
+
+Rules:
+
+5-8 scenes
+
+Total narration:
+55-95 words
+
+
+Scene 1:
+strong hook
+
+
+Each scene:
+- narration
+- 2-4 English Pexels searches
+
+
+Research:
+
+${research.text}
+
+
+`,
+
+
+
+config:{
+
+responseMimeType:"application/json",
+
+responseSchema:{
+
+type:Type.OBJECT,
+
+properties:{
+
+
+topic:{
+type:Type.STRING
+},
+
+
+title:{
+type:Type.STRING
+},
+
+
+description:{
+type:Type.STRING
+},
+
+
+hook:{
+type:Type.STRING
+},
+
+
+
+scenes:{
+
+type:Type.ARRAY,
+
+items:{
+
+type:Type.OBJECT,
+
+
+properties:{
+
+
+narration:{
+type:Type.STRING
+},
+
+
+searchQueries:{
+
+type:Type.ARRAY,
+
+items:{
+type:Type.STRING
+}
+
+}
+
+},
+
+
+required:[
+"narration",
+"searchQueries"
+]
+
+
+}
+
+
+}
+
+
+},
+
+
+required:[
+"topic",
+"title",
+"description",
+"hook",
+"scenes"
+]
+
+
+}
+
+
+}
+
+
+
+          });
+
+
+        });
+
+
+
+        const text=response.text?.trim();
+
+
+
+        if(text){
+
+          return blueprintSchema.parse(
+            JSON.parse(text)
+          );
+
+        }
+
+
+
+
+      }
+      catch(error){
+
+        console.log(
+        "[LOCAL AI] Blueprint fallback"
+        );
+
+      }
+
+
+    }
+
+
+
+
+    return this.localBlueprint(
+      research
+    );
+
+
+
+  }
+
+
+
+
+
+
+
+
+private localTopics(
+niche:string,
+count:number
+):TopicPlan[]{
+
+
+const topics=[
+
+"How WiFi Was Invented",
+
+"The Hidden Story Of QR Codes",
+
+"Why Airplane Mode Exists",
+
+"How GPS Finds Your Location",
+
+"The Strange Origin Of Bluetooth",
+
+"How Electric Cars Changed Technology",
+
+"Why Computer Keyboard Letters Are Arranged Like This",
+
+"The First Internet Message Ever Sent",
+
+"How Smartphones Changed The World",
+
+"Hidden Technology Inside Everyday Objects"
+
+
+];
+
+
+return Array.from(
+{length:count},
+(_,i)=>({
+
+topic:topics[i % topics.length],
+
+angle:
+`The surprising story behind ${topics[i % topics.length]}`
+
+})
+
+);
+
+
+}
+
+
+
+
+
+
+
+
+
+private localBlueprint(
+research:ResearchResult
+
+):Blueprint{
+
+
+const topic =
+research.text
+.split("\n")
+.find(x=>x.includes("Topic:"))
+?.replace("Topic:","")
+.trim()
+||
+"Unknown Technology Story";
+
+
+
+
+
+return {
+
+topic,
+
+
+title:
+topic.length>70
+? topic.substring(0,70)
+: topic,
+
+
+description:
+`A short documentary explaining the hidden story behind ${topic}.`,
+
+
+hook:
+`You use this every day, but you probably don't know its real story.`,
+
+
+
+scenes:[
+
+
+{
+narration:
+`${topic} has a fascinating story that changed the way people use technology today.`,
+
+searchQueries:[
+"modern technology",
+"computer laboratory"
+]
+
+},
+
+
+
+{
+narration:
+"It started from research and ideas that slowly became part of everyday life.",
+
+searchQueries:[
+"scientists laboratory",
+"technology research"
+]
+
+},
+
+
+
+{
+narration:
+"Over time engineers improved this invention and made it accessible worldwide.",
+
+searchQueries:[
+"engineering technology",
+"innovation"
+]
+
+},
+
+
+
+{
+narration:
+"Today millions of people use this technology without thinking about how it works.",
+
+searchQueries:[
+"people using smartphone",
+"digital technology"
+]
+
+},
+
+
+
+{
+narration:
+"The hidden story behind this invention shows how science changes our world.",
+
+searchQueries:[
+"future technology",
+"earth digital network"
+]
+
+}
+
+
+
+]
+
+
+};
+
+
+
+}
+
+
+
 }
