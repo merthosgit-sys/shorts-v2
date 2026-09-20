@@ -1,11 +1,11 @@
 import type {
- Blueprint,
- ResearchResult
+  Blueprint,
+  ResearchResult
 } from "../domain/blueprint.js";
 
 
 
-const HOOKS = [
+const HOOKS:string[] = [
 
 "Most people use this every day, but they don't know the real story behind it.",
 
@@ -21,7 +21,9 @@ const HOOKS = [
 
 
 
-const ENDINGS = [
+
+
+const ENDINGS:string[] = [
 
 "This is why this technology became part of modern life.",
 
@@ -37,59 +39,84 @@ const ENDINGS = [
 
 
 
-const VISUAL_MAP:Record<string,string[]> = {
+
+
+const VISUAL_MAP:
+Record<string,string[]> = {
 
 
 wifi:[
 
 "wifi router close up",
+
 "wireless signal animation",
+
 "computer network",
+
 "technology laboratory"
 
 ],
 
 
+
 gps:[
 
 "GPS satellite earth",
+
 "navigation map animation",
+
 "satellite communication",
+
 "smartphone map"
 
 ],
 
 
+
 bluetooth:[
 
 "bluetooth devices",
+
 "wireless technology",
+
 "smart devices",
+
 "computer connection"
 
 ],
 
 
+
 ai:[
 
 "artificial intelligence",
+
 "robot technology",
+
 "AI computer",
+
 "futuristic technology"
 
 ],
 
 
+
 default:[
 
 "technology documentary",
+
 "modern computer",
+
 "innovation laboratory",
+
 "digital world"
 
 ]
 
 };
+
+
+
 
 
 
@@ -110,6 +137,7 @@ Math.random()*array.length
 ];
 
 
+
 if(value===undefined){
 
 throw new Error(
@@ -119,9 +147,14 @@ throw new Error(
 }
 
 
+
 return value;
 
+
 }
+
+
+
 
 
 
@@ -145,12 +178,17 @@ const item of Object.keys(VISUAL_MAP)
 ){
 
 
+const visuals =
+VISUAL_MAP[item];
+
+
+
 if(
-key.includes(item)
+key.includes(item) &&
+visuals !== undefined
 ){
 
-return VISUAL_MAP[item] ??
-VISUAL_MAP.default;
+return visuals;
 
 }
 
@@ -159,9 +197,15 @@ VISUAL_MAP.default;
 
 
 
-return VISUAL_MAP.default ?? [
+return [
 
-"technology documentary"
+"technology documentary",
+
+"modern computer",
+
+"innovation laboratory",
+
+"digital world"
 
 ];
 
@@ -174,10 +218,11 @@ return VISUAL_MAP.default ?? [
 
 
 
+
+
 function createScenes(
 topic:string
 ){
-
 
 const visuals =
 detectVisual(topic);
@@ -185,6 +230,7 @@ detectVisual(topic);
 
 
 return [
+
 
 {
 
@@ -200,6 +246,7 @@ visuals[1] ?? "innovation"
 ]
 
 },
+
 
 
 {
@@ -218,6 +265,7 @@ visuals[3] ?? "laboratory"
 },
 
 
+
 {
 
 narration:
@@ -232,6 +280,7 @@ searchQueries:[
 ]
 
 },
+
 
 
 {
@@ -250,6 +299,7 @@ searchQueries:[
 },
 
 
+
 {
 
 narration:
@@ -265,10 +315,12 @@ searchQueries:[
 
 }
 
+
 ];
 
 
 }
+
 
 
 
@@ -285,7 +337,9 @@ research:ResearchResult
 ):Blueprint{
 
 
+
 const topic =
+
 research.text
 .split("\n")
 .find(
@@ -304,36 +358,57 @@ line.toLowerCase()
 
 
 
+
 const cleanTopic =
-topic.length>5
+
+topic.length > 5
+
 ?
+
 topic
+
 :
+
 "Unknown Technology";
+
+
+
 
 
 
 
 return {
 
+
 topic:cleanTopic,
+
 
 title:
 `The Hidden Story Behind ${cleanTopic}`,
 
+
+
 description:
 `A short documentary explaining how ${cleanTopic} changed the world and why it matters today.`,
+
+
 
 hook:
 random(HOOKS),
 
+
+
 scenes:
 createScenes(cleanTopic)
+
+
 
 };
 
 
+
 }
+
 
 
 }
