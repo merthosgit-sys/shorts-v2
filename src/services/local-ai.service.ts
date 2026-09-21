@@ -30,12 +30,10 @@ export class LocalAIService {
 
 
 
-
     if(!item){
 
 
       return {
-
 
         text:
 `
@@ -45,9 +43,9 @@ ${topic}
 
 Main facts:
 
-${topic}, teknoloji ve bilimin gelişiminde önemli bir yere sahip olan ilginç bir konudur.
+${topic}, teknoloji ve bilimin gelişiminde önemli bir yere sahip ilginç bir konudur.
 
-Bu teknoloji zaman içinde gelişerek insanların günlük hayatını değiştirmiştir.
+Bu teknoloji zaman içinde gelişerek insanların günlük yaşamını değiştirmiştir.
 
 `,
 
@@ -57,7 +55,6 @@ Bu teknoloji zaman içinde gelişerek insanların günlük hayatını değiştir
 
 
     }
-
 
 
 
@@ -72,7 +69,6 @@ ${item.topic}
 
 
 Main facts:
-
 
 ${item.facts.join("\n")}
 
@@ -96,7 +92,6 @@ ${item.facts.join("\n")}
 
 
 
-
   public generateBlueprint(
     topic:string
   ):Blueprint {
@@ -107,7 +102,6 @@ ${item.facts.join("\n")}
       TOPIC_LIBRARY.find(
         (x)=>x.topic===topic
       );
-
 
 
 
@@ -142,19 +136,16 @@ ${item.facts.join("\n")}
 
 
 
-
       title:
 
-      `${topic} Hakkında Bilinmeyen Gerçekler`,
-
+      `${topic} Hakkında Şaşırtıcı Gerçekler`,
 
 
 
 
       description:
 
-      `${topic} teknolojisinin tarihini ve dünyayı nasıl değiştirdiğini anlatan kısa belgesel videosu.`,
-
+      `${topic} teknolojisinin bilinmeyen hikayesini anlatan kısa belgesel tarzı video.`,
 
 
 
@@ -164,10 +155,7 @@ ${item.facts.join("\n")}
 
       item?.hook ??
 
-      `${topic} her gün kullandığımız ancak arkasındaki hikayeyi çoğu kişinin bilmediği bir teknoloji.`,
-
-
-
+      `${topic} her gün kullandığımız ama hikayesini çoğu kişinin bilmediği bir teknoloji.`,
 
 
 
@@ -178,13 +166,11 @@ ${item.facts.join("\n")}
 
 
 
-
         {
 
           narration:
 
-          `${topic}, basit bir fikir olarak başlayan ancak zaman içinde dünyanın en önemli teknolojilerinden biri haline gelen etkileyici bir gelişim hikayesine sahiptir. Bu teknolojinin arkasında yıllarca süren araştırmalar ve büyük mühendislik çalışmaları vardır.`,
-
+          `${topic} sandığımızdan çok daha ilginç bir hikayeye sahip. Her gün kullandığımız bu teknoloji aslında yıllar süren çalışmaların sonucu ortaya çıktı.`,
 
 
           searchQueries:[
@@ -203,21 +189,18 @@ ${item.facts.join("\n")}
 
 
 
-
-
         {
 
           narration:
 
-          `Bilim insanları ve mühendisler bu teknolojiyi geliştirmek için birçok zorlu problemi çözmek zorunda kaldı. Yapılan deneyler ve yeni fikirler sayesinde sistem daha hızlı, daha küçük ve daha kullanışlı hale geldi.`,
-
+          `İlk başta çözülmesi gereken birçok problem vardı. Bilim insanları ve mühendisler farklı yöntemler deneyerek bu teknolojiyi geliştirdi.`,
 
 
           searchQueries:[
 
             visuals[2] ?? "engineering",
 
-            "technology research laboratory"
+            "technology laboratory"
 
           ]
 
@@ -229,14 +212,11 @@ ${item.facts.join("\n")}
 
 
 
-
-
         {
 
           narration:
 
-          `Yıllar süren geliştirme sürecinden sonra bu teknoloji milyonlarca insanın kullanımına sunuldu. Bugün birçok kişi bu teknolojiyi her gün kullanıyor ancak arkasındaki karmaşık süreci bilmiyor.`,
-
+          `Zaman içinde yapılan geliştirmeler sayesinde bu teknoloji daha hızlı ve daha kullanışlı hale geldi. Bugün milyonlarca insan farkında olmadan bunu kullanıyor.`,
 
 
           searchQueries:[
@@ -255,14 +235,11 @@ ${item.facts.join("\n")}
 
 
 
-
-
         {
 
           narration:
 
-          `Günümüzde bu teknoloji hâlâ gelişmeye devam ediyor. Yeni araştırmalar sayesinde daha güçlü, daha hızlı ve gelecekte daha önemli bir hale gelmesi bekleniyor.`,
-
+          `Günümüzde araştırmalar devam ediyor. Yeni nesil sistemlerle bu teknolojinin gelecekte daha da gelişmesi bekleniyor.`,
 
 
           searchQueries:[
@@ -281,14 +258,11 @@ ${item.facts.join("\n")}
 
 
 
-
-
         {
 
           narration:
 
-          `${topic} bize insanların merakı, bilimi ve mühendisliği birleştirerek dünyayı nasıl değiştirebildiğini gösteriyor. Küçük bir fikir, zaman içinde büyük bir dönüşüme neden olabilir.`,
-
+          `${topic} bize küçük fikirlerin büyük değişimlere dönüşebileceğini gösteriyor. Bilim ve insan zekası dünyayı değiştirmeye devam ediyor.`,
 
 
           searchQueries:[
@@ -303,6 +277,7 @@ ${item.facts.join("\n")}
 
 
 
+
       ]
 
 
@@ -310,7 +285,6 @@ ${item.facts.join("\n")}
 
 
     };
-
 
 
 
