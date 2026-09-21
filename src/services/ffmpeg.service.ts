@@ -195,7 +195,7 @@ export class FfmpegService {
       '',
       '[V4+ Styles]',
       'Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding',
-      'Style: Default,DejaVu Sans,80,&H00FFFFFF,&H000000FF,&H00101010,&H70000000,-1,0,0,0,100,100,0,0,1,6,2,2,90,90,270,1',
+      'Style: Default,DejaVu Sans,62,&H00FFFFFF,&H000000FF,&H00101010,&H70000000,-1,0,0,0,100,100,0,0,1,5,2,2,120,120,350,1',
       'Style: Hook,DejaVu Sans,92,&H00FFFFFF,&H000000FF,&H00000000,&H78000000,-1,0,0,0,100,100,0,0,1,7,2,2,80,80,300,1',
       '',
       '[Events]',
