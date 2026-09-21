@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+
 import {
   blueprintSchema,
   topicPlanSchema,
@@ -10,20 +11,32 @@ import {
 import { LocalAIService } from './local-ai.service.js';
 
 
+
 interface ErrorLike {
+
   status?: number | string;
+
   code?: number | string;
+
   message?: string;
+
 }
 
 
-function getError(error: unknown): ErrorLike {
+
+
+function getError(
+  error: unknown
+): ErrorLike {
+
 
   if (
     typeof error !== "object" ||
     error === null
   ) {
+
     return {};
+
   }
 
 
@@ -34,26 +47,35 @@ function getError(error: unknown): ErrorLike {
   const result: ErrorLike = {};
 
 
+
   if (
     typeof e.status === "number" ||
     typeof e.status === "string"
   ) {
+
     result.status = e.status;
+
   }
+
 
 
   if (
     typeof e.code === "number" ||
     typeof e.code === "string"
   ) {
+
     result.code = e.code;
+
   }
+
 
 
   if (
     typeof e.message === "string"
   ) {
+
     result.message = e.message;
+
   }
 
 
@@ -66,7 +88,7 @@ function getError(error: unknown): ErrorLike {
 
 
 function isQuotaError(
-error: unknown
+  error: unknown
 ): boolean {
 
 
@@ -78,6 +100,7 @@ error: unknown
     e.message?.toLowerCase() ?? "";
 
 
+
   return (
 
     message.includes("quota") ||
@@ -87,7 +110,10 @@ error: unknown
 
   );
 
+
 }
+
+
 
 
 
@@ -100,30 +126,38 @@ export class GeminiService {
 
   readonly #client?: GoogleGenAI;
 
-  readonly #model: string;
+  readonly #model:string;
 
-  readonly #localAI: LocalAIService;
+  readonly #localAI:LocalAIService;
+
+
 
 
 
   constructor(
-    apiKey: string,
-    model: string
-  ) {
+    apiKey:string,
+    model:string
+  ){
 
 
     this.#model = model;
+
 
     this.#localAI =
       new LocalAIService();
 
 
-    if (apiKey.trim()) {
+
+    if(apiKey.trim()){
+
 
       this.#client =
         new GoogleGenAI({
+
           apiKey
+
         });
+
 
     }
 
@@ -136,18 +170,27 @@ export class GeminiService {
 
 
 
+
+
   public async planTopics(
-    niche: string,
-    language: string,
-    count: number
-  ): Promise<readonly TopicPlan[]> {
+
+    niche:string,
+
+    language:string,
+
+    count:number
+
+  ):Promise<readonly TopicPlan[]> {
 
 
-    if (!this.#client) {
+
+    if(!this.#client){
 
       return this.localTopics(count);
 
     }
+
+
 
 
 
@@ -157,31 +200,51 @@ export class GeminiService {
       const response =
         await this.#client.models.generateContent({
 
-          model: this.#model,
+          model:this.#model,
+
 
           contents:
 `
-Create ${count} YouTube Shorts topics.
+Sen bir YouTube Shorts içerik uzmanısın.
 
-Niche:
+${count} adet benzersiz video konusu oluştur.
+
+
+Kanal konusu:
+
 ${niche}
 
-Language:
+
+Dil:
+
 ${language}
 
-Return JSON:
+
+Kurallar:
+
+- Konular Türkçe olmalı.
+- İlginç ve merak uyandırıcı olmalı.
+- 40-55 saniyelik Shorts formatına uygun olmalı.
+- Bilim, teknoloji, tarih ve günlük hayat bağlantılı olmalı.
+- Aynı konu tekrar edilmemeli.
+
+
+Sadece JSON döndür:
+
 
 {
-"topics":[
-{
-"topic":"",
-"angle":""
+ "topics":[
+  {
+   "topic":"",
+   "angle":""
+  }
+ ]
 }
-]
-}
+
 `
 
         });
+
 
 
 
@@ -190,7 +253,7 @@ Return JSON:
 
 
 
-      if (!text) {
+      if(!text){
 
         throw new Error(
           "Empty response"
@@ -201,27 +264,40 @@ Return JSON:
 
 
       return topicPlanSchema.parse(
+
         JSON.parse(text)
+
       ).topics;
 
 
 
+
     }
-    catch(error) {
+
+    catch(error){
 
 
       console.log(
+
         isQuotaError(error)
+
         ?
+
         "[Gemini quota] Local topics"
+
         :
+
         "[Gemini failed] Local topics"
+
       );
+
 
 
       return this.localTopics(count);
 
+
     }
+
 
 
   }
@@ -233,15 +309,27 @@ Return JSON:
 
 
 
+
+
+
+
+
   public async researchTopic(
-    niche: string,
-    _language: string,
-    requestedTopic: string,
-    angle?: string
-  ): Promise<ResearchResult> {
+
+    niche:string,
+
+    _language:string,
+
+    requestedTopic:string,
+
+    angle?:string
+
+  ):Promise<ResearchResult>{
 
 
-    if (this.#client) {
+
+    if(this.#client){
+
 
 
       try {
@@ -252,22 +340,46 @@ Return JSON:
 
             model:this.#model,
 
+
             contents:
 `
-Research this topic:
+Türkçe YouTube Shorts araştırması yap.
+
+
+Konu:
 
 ${requestedTopic}
 
-Niche:
+
+Kategori:
+
 ${niche}
 
-Angle:
+
+Açı:
+
 ${angle ?? ""}
 
-Give factual information.
+
+
+Şunları ver:
+
+- önemli gerçekler
+- kısa tarih
+- neden önemli olduğu
+- görsel fikirleri
+
+
+Kurallar:
+
+- uydurma bilgi verme.
+- kesin olmayan bilgileri yazma.
+- Türkçe yaz.
+
 `
 
           });
+
 
 
 
@@ -276,7 +388,9 @@ Give factual information.
 
 
 
+
         if(text){
+
 
           return {
 
@@ -286,30 +400,45 @@ Give factual information.
 
           };
 
+
         }
 
 
 
       }
-      catch {
+
+      catch{
+
 
         console.log(
+
           "[Gemini research fallback]"
+
         );
 
+
       }
+
 
 
     }
 
 
 
+
+
     return this.#localAI.generateResearch(
+
       requestedTopic
+
     );
 
 
   }
+
+
+
+
 
 
 
@@ -320,62 +449,98 @@ Give factual information.
 
 
   public async createBlueprint(
+
     research:ResearchResult,
+
     niche:string,
+
     language:string
+
   ):Promise<Blueprint>{
+
+
+
 
 
     if(this.#client){
 
 
+
       try {
+
 
 
         const response =
           await this.#client.models.generateContent({
 
+
             model:this.#model,
+
 
 
             contents:
 `
-Create YouTube Shorts blueprint.
+Türkçe YouTube Shorts senaryosu oluştur.
 
-Language:
-${language}
 
-Niche:
+Kanal:
+
 ${niche}
 
-Rules:
 
-5 scenes
-55-95 words narration
+Dil:
 
-Return JSON only:
+${language}
+
+
+
+Kurallar:
+
+
+- Kesinlikle Türkçe yaz.
+- İngilizce cümle kullanma.
+- 5 sahne oluştur.
+- Video süresi 45-55 saniye olacak.
+- İlk sahne güçlü merak uyandırmalı.
+- Her sahnede anlatım metni olmalı.
+- Her sahnede 2 adet İngilizce Pexels araması üret.
+
+
+
+JSON formatı:
+
 
 {
-topic:"",
-title:"",
-description:"",
-hook:"",
-scenes:[
+"topic":"",
+"title":"",
+"description":"",
+"hook":"",
+"scenes":[
+
 {
-narration:"",
-searchQueries:[""]
-}
+"narration":"",
+"searchQueries":[
+"",
+""
 ]
 }
 
+]
 
-Research:
+}
+
+
+
+Araştırma:
 
 ${research.text}
+
 
 `
 
           });
+
+
 
 
 
@@ -384,23 +549,37 @@ ${research.text}
 
 
 
+
         if(text){
 
+
           return blueprintSchema.parse(
+
             JSON.parse(text)
+
           );
+
 
         }
 
 
+
+
+
       }
-      catch {
+
+      catch{
+
 
         console.log(
+
           "[Gemini blueprint fallback]"
+
         );
 
+
       }
+
 
 
     }
@@ -408,26 +587,52 @@ ${research.text}
 
 
 
+
     const topic =
+
       research.text
+
       .split("\n")
+
       .find(
+
         line =>
-        line.startsWith("Topic:")
+
+        line.toLowerCase()
+
+        .startsWith("topic")
+
       )
-      ?.replace("Topic:","")
+
+      ?.replace(
+
+        /topic:/i,
+
+        ""
+
+      )
+
       .trim()
+
       ??
-      "Technology Story";
+
+      "Teknoloji Hikayesi";
+
+
 
 
 
     return this.#localAI.generateBlueprint(
+
       topic
+
     );
 
 
+
   }
+
+
 
 
 
@@ -436,44 +641,69 @@ ${research.text}
 
 
   private localTopics(
+
     count:number
-  ):TopicPlan[] {
+
+  ):TopicPlan[]{
+
 
 
     const topics = [
 
-      "How WiFi Was Invented",
-      "The Hidden Story Of QR Codes",
-      "How GPS Finds Your Location",
-      "The Strange Origin Of Bluetooth",
-      "Why Keyboard Letters Are Arranged Like This",
-      "The First Internet Message Ever Sent",
-      "How Electric Cars Changed Technology",
-      "Hidden Technology Inside Everyday Objects"
+
+      "WiFi Nasıl İcat Edildi?",
+
+      "QR Kodların Gizli Hikayesi",
+
+      "GPS Konumumuzu Nasıl Buluyor?",
+
+      "Bluetooth İsmi Nereden Geliyor?",
+
+      "QWERTY Klavye Neden Böyle?",
+
+      "İlk İnternet Mesajı",
+
+      "Elektrikli Arabaların Tarihi",
+
+      "Yapay Zekanın Başlangıcı"
+
+
 
     ];
 
 
 
+
+
     return Array.from(
+
       {length:count},
+
+
       (_,index)=>({
 
+
         topic:
-        topics[index % topics.length]
-        ??
-        "Technology Story",
+
+        topics[index % topics.length] ?? "Teknoloji Hikayesi",
+
 
 
         angle:
-        "The surprising story behind this technology"
+
+        "Bu teknolojinin bilinmeyen hikayesi"
+
+
 
       })
+
 
     );
 
 
+
   }
+
 
 
 }
