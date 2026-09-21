@@ -17,10 +17,10 @@ export class LocalAIService {
 
 
 
+
   public generateResearch(
     topic:string
   ):ResearchResult {
-
 
 
     const item =
@@ -45,8 +45,9 @@ ${topic}
 
 Main facts:
 
-${topic} is an interesting technology story.
-It connects science, engineering and everyday life.
+${topic}, teknoloji ve bilimin gelişiminde önemli bir yere sahip olan ilginç bir konudur.
+
+Bu teknoloji zaman içinde gelişerek insanların günlük hayatını değiştirmiştir.
 
 `,
 
@@ -56,7 +57,6 @@ It connects science, engineering and everyday life.
 
 
     }
-
 
 
 
@@ -73,6 +73,7 @@ ${item.topic}
 
 Main facts:
 
+
 ${item.facts.join("\n")}
 
 `,
@@ -83,6 +84,10 @@ ${item.facts.join("\n")}
 
 
   }
+
+
+
+
 
 
 
@@ -108,16 +113,18 @@ ${item.facts.join("\n")}
 
 
     const visuals:string[] =
+
       item?.visuals ??
+
       [
 
-        "technology animation",
+        "technology documentary",
 
-        "computer laboratory",
+        "innovation laboratory",
 
-        "modern innovation",
+        "digital technology",
 
-        "digital world"
+        "future technology"
 
       ];
 
@@ -130,23 +137,38 @@ ${item.facts.join("\n")}
     return {
 
 
+
       topic,
 
 
 
+
       title:
-      `The Hidden Story Behind ${topic}`,
+
+      `${topic} Hakkında Bilinmeyen Gerçekler`,
+
+
 
 
 
       description:
-      `A documentary style Shorts video explaining the history, technology and hidden details behind ${topic}.`,
+
+      `${topic} teknolojisinin tarihini ve dünyayı nasıl değiştirdiğini anlatan kısa belgesel videosu.`,
+
+
+
 
 
 
       hook:
+
       item?.hook ??
-      `The hidden story behind ${topic} is more interesting than you think.`,
+
+      `${topic} her gün kullandığımız ancak arkasındaki hikayeyi çoğu kişinin bilmediği bir teknoloji.`,
+
+
+
+
 
 
 
@@ -155,11 +177,13 @@ ${item.facts.join("\n")}
 
 
 
+
+
         {
 
-
           narration:
-          `${topic} started with a simple idea, but it became one of the most important technologies in modern life. Behind this invention there are years of research, experiments and engineering decisions.`,
+
+          `${topic}, basit bir fikir olarak başlayan ancak zaman içinde dünyanın en önemli teknolojilerinden biri haline gelen etkileyici bir gelişim hikayesine sahiptir. Bu teknolojinin arkasında yıllarca süren araştırmalar ve büyük mühendislik çalışmaları vardır.`,
 
 
 
@@ -171,8 +195,10 @@ ${item.facts.join("\n")}
 
           ]
 
-
         },
+
+
+
 
 
 
@@ -181,9 +207,9 @@ ${item.facts.join("\n")}
 
         {
 
-
           narration:
-          `Scientists and engineers had to solve many difficult problems before this technology became successful. They tested different solutions and improved the system step by step.`,
+
+          `Bilim insanları ve mühendisler bu teknolojiyi geliştirmek için birçok zorlu problemi çözmek zorunda kaldı. Yapılan deneyler ve yeni fikirler sayesinde sistem daha hızlı, daha küçük ve daha kullanışlı hale geldi.`,
 
 
 
@@ -191,10 +217,9 @@ ${item.facts.join("\n")}
 
             visuals[2] ?? "engineering",
 
-            "technology laboratory"
+            "technology research laboratory"
 
           ]
-
 
         },
 
@@ -204,11 +229,13 @@ ${item.facts.join("\n")}
 
 
 
+
+
         {
 
-
           narration:
-          `After years of development, this invention became available to millions of people. Today many users benefit from it every day without knowing the complex story behind it.`,
+
+          `Yıllar süren geliştirme sürecinden sonra bu teknoloji milyonlarca insanın kullanımına sunuldu. Bugün birçok kişi bu teknolojiyi her gün kullanıyor ancak arkasındaki karmaşık süreci bilmiyor.`,
 
 
 
@@ -216,10 +243,9 @@ ${item.facts.join("\n")}
 
             "people using technology",
 
-            "digital lifestyle"
+            "modern digital life"
 
           ]
-
 
         },
 
@@ -229,11 +255,13 @@ ${item.facts.join("\n")}
 
 
 
+
+
         {
 
-
           narration:
-          `Modern versions continue to improve with new discoveries. Engineers are still finding ways to make this technology faster, smarter and more useful for the future.`,
+
+          `Günümüzde bu teknoloji hâlâ gelişmeye devam ediyor. Yeni araştırmalar sayesinde daha güçlü, daha hızlı ve gelecekte daha önemli bir hale gelmesi bekleniyor.`,
 
 
 
@@ -241,10 +269,9 @@ ${item.facts.join("\n")}
 
             "future technology",
 
-            "innovation documentary"
+            "scientific innovation"
 
           ]
-
 
         },
 
@@ -254,11 +281,13 @@ ${item.facts.join("\n")}
 
 
 
+
+
         {
 
-
           narration:
-          `This is why the story behind ${topic} shows how human creativity and science can transform a simple idea into something that changes the world.`,
+
+          `${topic} bize insanların merakı, bilimi ve mühendisliği birleştirerek dünyayı nasıl değiştirebildiğini gösteriyor. Küçük bir fikir, zaman içinde büyük bir dönüşüme neden olabilir.`,
 
 
 
@@ -270,7 +299,6 @@ ${item.facts.join("\n")}
 
           ]
 
-
         }
 
 
@@ -279,11 +307,17 @@ ${item.facts.join("\n")}
 
 
 
+
+
     };
 
 
 
+
   }
+
+
+
 
 
 
